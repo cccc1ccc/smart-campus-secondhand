@@ -156,3 +156,6 @@ approximately **25%** of the total work.
 
 The full proposal document is available at
 [`docs/Task1_Project_Proposal_Campus_Secondhand_Platform.docx`](docs/Task1_Project_Proposal_Campus_Secondhand_Platform.docx).
+
+Decisions, changes and open items are tracked in
+[`docs/PROJECT_LOG.md`](docs/PROJECT_LOG.md).
