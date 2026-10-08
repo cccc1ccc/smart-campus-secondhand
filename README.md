@@ -140,5 +140,19 @@ Java 17 + Spring Boot, MySQL 8, Maven, JUnit 5.
 
 ---
 
+## 10. Contributions to This Report
+
+This report was produced jointly by the four members of Group 11. Each member contributed
+approximately **25%** of the total work.
+
+| Member | Name / Student No. | Contribution to This Report | Share |
+| --- | --- | --- | --- |
+| Member 1 | Wu Yutong / 1240016186 | Led the team; organised meetings and the task breakdown; wrote Section 1 (Team Profile) and Section 3 (Plan of Work and Product Ownership); compiled and finalised the complete report. | 25% |
+| Member 2 | Wang Yike / 1240012305 | Wrote Section 2.1 (Problem Diagnosis) and Section 2.2 (Proposed Treatment); defined the F1-F8 functional feature list and the typical use scenario in Section 2.3; sketched the initial system structure. | 25% |
+| Member 3 | Chen Moxiong / 1240008865 | Designed the rule-based matching method and the weighted scoring formula for F5; wrote Section 4 (Success Criteria) and the measurable quality commitments of Pair A and Pair B. | 25% |
+| Member 4 | Gao Shengzhe / 1240008949 | Applied the MUST report template and formatting; created the GitHub repository and the project README; wrote Section 5 (Expected Result) and the project scope; proofread the final document. | 25% |
+
+---
+
 The full proposal document is available at
 [`docs/Task1_Project_Proposal_Campus_Secondhand_Platform.docx`](docs/Task1_Project_Proposal_Campus_Secondhand_Platform.docx).
