@@ -12,12 +12,12 @@ automatic buyer-seller matches.
 
 ## 1. Team Profile
 
-| Member | Name / Student No. | Main Functional Ownership | Initial Strength Focus |
+| Member | Student No. | Main Functional Ownership | Initial Strength Focus |
 | --- | --- | --- | --- |
-| Member 1 | Wu Yutong / 1240016186 | User account and product listing management | Programming and organization |
-| Member 2 | Wang Yike / 1240012305 | Product search, filtering, sorting and favorites | Programming and system design |
-| Member 3 | Chen Moxiong / 1240008865 | Want-to-buy requests and buyer-seller matching | Programming and problem solving |
-| Member 4 | Gao Shengzhe / 1240008949 | Transaction status and notifications | Documentation, integration and presentation |
+| Wu Yutong | 1240016186 | User account and product listing management | Programming and organization |
+| Wang Yike | 1240012305 | Product search, filtering, sorting and favorites | Programming and system design |
+| Chen Moxiong | 1240008865 | Want-to-buy requests and buyer-seller matching | Programming and problem solving |
+| Gao Shengzhe | 1240008949 | Transaction status and notifications | Documentation, integration and presentation |
 
 All members participate in requirements analysis, design, implementation, testing,
 documentation and presentation. Work is divided by **functional features**, not by
@@ -99,10 +99,10 @@ Only pairs scoring above **0.70** are shown to the user.
 
 | Member | Owned Functional Features | Main Responsibility |
 | --- | --- | --- |
-| Member 1 (Wu Yutong) | F1, F2 | Complete the user account and product publishing/management workflow. |
-| Member 2 (Wang Yike) | F3, F6 | Complete product search, filtering, sorting and the favorites function. |
-| Member 3 (Chen Moxiong) | F4, F5 | Complete want-to-buy requests and the rule-based buyer-seller matching function. |
-| Member 4 (Gao Shengzhe) | F7, F8 | Complete transaction status and in-system notification functions. |
+| Wu Yutong | F1, F2 | Complete the user account and product publishing/management workflow. |
+| Wang Yike | F3, F6 | Complete product search, filtering, sorting and the favorites function. |
+| Chen Moxiong | F4, F5 | Complete want-to-buy requests and the rule-based buyer-seller matching function. |
+| Gao Shengzhe | F7, F8 | Complete transaction status and in-system notification functions. |
 
 The four members work in **two pairs**:
 
@@ -145,12 +145,12 @@ Java 17 + Spring Boot, MySQL 8, Maven, JUnit 5.
 This report was produced jointly by the four members of Group 11. Each member contributed
 approximately **25%** of the total work.
 
-| Member | Name / Student No. | Contribution to This Report | Share |
+| Member | Student No. | Contribution to This Report | Share |
 | --- | --- | --- | --- |
-| Member 1 | Wu Yutong / 1240016186 | Led the team; organised meetings and the task breakdown; wrote Section 1 (Team Profile) and Section 3 (Plan of Work and Product Ownership); compiled and finalised the complete report. | 25% |
-| Member 2 | Wang Yike / 1240012305 | Wrote Section 2.1 (Problem Diagnosis) and Section 2.2 (Proposed Treatment); defined the F1-F8 functional feature list and the typical use scenario in Section 2.3; sketched the initial system structure. | 25% |
-| Member 3 | Chen Moxiong / 1240008865 | Designed the rule-based matching method and the weighted scoring formula for F5; wrote Section 4 (Success Criteria) and the measurable quality commitments of Pair A and Pair B. | 25% |
-| Member 4 | Gao Shengzhe / 1240008949 | Applied the MUST report template and formatting; created the GitHub repository and the project README; wrote Section 5 (Expected Result) and the project scope; proofread the final document. | 25% |
+| Wu Yutong | 1240016186 | Led the team; organised meetings and the task breakdown; wrote Section 1 (Team Profile) and Section 3 (Plan of Work and Product Ownership); compiled and finalised the complete report. | 25% |
+| Wang Yike | 1240012305 | Wrote Section 2.1 (Problem Diagnosis) and Section 2.2 (Proposed Treatment); defined the F1-F8 functional feature list and the typical use scenario in Section 2.3; sketched the initial system structure. | 25% |
+| Chen Moxiong | 1240008865 | Designed the rule-based matching method and the weighted scoring formula for F5; wrote Section 4 (Success Criteria) and the measurable quality commitments of Pair A and Pair B. | 25% |
+| Gao Shengzhe | 1240008949 | Applied the MUST report template and formatting; created the GitHub repository and the project README; wrote Section 5 (Expected Result) and the project scope; proofread the final document. | 25% |
 
 ---
 
