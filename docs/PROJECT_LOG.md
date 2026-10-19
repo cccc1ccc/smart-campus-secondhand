@@ -25,6 +25,7 @@ this file instead of from memory.
 | 2026-10-08 | GitHub repository created and pushed; proposal URL corrected to point at the real repository. |
 | 2026-10-08 | Course rules recorded: every report must list per-member contributions; Task2 requirement elicitation has three methods. Added Section 6 "Contributions to This Report". |
 | 2026-10-08 | Member tables normalised: Member column = name, second column = student number only. |
+| 2026-10-18 | Task2 URS written on Desktop (`Task2_User_Requirements_Specifications_Campus_Secondhand_Platform.docx`): F1-F8 expanded into REQ-1.1..REQ-8.1, plus PERF/SEC/AVA/CAP/DOM non-functional + domain requirements, Section 10 elicitation (Group 10 client meeting, user interviews, surrogate users), Section 11 per-member contributions. PDF export still pending (A1 rule: use Word Save As PDF). |
 
 ## 2. Key Decisions
 
