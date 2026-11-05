@@ -1,0 +1,46 @@
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: 2h
+      cookie:
+        http-only: true
+        same-site: lax
+
+spring:
+  application:
+    name: smart-campus-secondhand
+  # Default profile: file-based H2 so the project runs with no database installation.
+  # Use -Dspring.profiles.active=mysql for the MySQL 8 deployment described in the URS.
+  datasource:
+    url: jdbc:h2:file:./data/secondhand;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50
+        jdbc:
+          batch_size: 50
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  web:
+    resources:
+      cache:
+        period: 0
+
+app:
+  seed:
+    enabled: true
+    listings: 5000
+
+logging:
+  level:
+    root: INFO
+    com.must.secondhand: INFO

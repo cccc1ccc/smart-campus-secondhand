@@ -26,6 +26,7 @@ this file instead of from memory.
 | 2026-10-08 | Course rules recorded: every report must list per-member contributions; Task2 requirement elicitation has three methods. Added Section 6 "Contributions to This Report". |
 | 2026-10-08 | Member tables normalised: Member column = name, second column = student number only. |
 | 2026-10-18 | Task2 URS written on Desktop (`Task2_User_Requirements_Specifications_Campus_Secondhand_Platform.docx`): F1-F8 expanded into REQ-1.1..REQ-8.1, plus PERF/SEC/AVA/CAP/DOM non-functional + domain requirements, Section 10 elicitation (Group 10 client meeting, user interviews, surrogate users), Section 11 per-member contributions. PDF export still pending (A1 rule: use Word Save As PDF). |
+| 2026-11-05 | **Version 1.0 implemented.** Spring Boot 3.5 + Spring Data JPA backend (10 REST controllers, 8 services), plain JavaScript single-page frontend, file-based H2 as default profile plus a MySQL profile, seeder (16 students / 5,000 listings / 8 requests), 14 unit tests, README Section 11 and `docs/RELEASE_v1.0.md`. Git tag `v1.0`. |
 
 ## 2. Key Decisions
 
@@ -38,6 +39,11 @@ this file instead of from memory.
 | D5 | Out of scope for v1: online payment, delivery logistics, external identity verification, recommendation algorithms. | Keeps Week 1-8 achievable and shows boundary awareness. |
 | D6 | Examples use **MOP** prices and MUST campus scenarios. | Local context reads as real; generic examples do not. |
 | D7 | Language and tooling: English report body, GitHub as the project website. | Part C explicitly allows free hosting such as GitHub as the project URL. |
+| D8 | Implementation stack: **Spring Boot 3.5 + Spring Data JPA + BCrypt**, frontend in plain HTML/CSS/JS served from `static/`. | Matches the planned Java stack in D7, needs no Node/npm build, and keeps every page a thin client of the REST API, which is easy to demo and to grade. |
+| D9 | Default runtime database is a **file-based H2** database with a `mysql` profile for MySQL 8. | The URS asks for MySQL 8, but the demo machine has no MySQL server; H2 keeps `mvn spring-boot:run` a one-command start while the MySQL profile still satisfies the written requirement. |
+| D10 | Keyword similarity is **coverage of the buyer's keywords (0.75) plus listing-text precision (0.25)** rather than a symmetric text distance. | The URS only says "keyword similarity above a threshold"; coverage matches the question the buyer asks ("does this listing contain what I want") and stops long descriptions from diluting a good match. |
+| D11 | Matching **re-runs on every create/edit/close**, with a scheduled retry limited to items created in the last 24 hours. | Satisfies REQ-5.1 without re-scoring 5,000 seeded listings every ten minutes. |
+| D12 | Seeded bulk listings are assigned to the eight "other student" accounts and backdated. | Keeps demo accounts under the 50-active-listing limit and out of the scheduled retry window. |
 
 ## 3. Member Ownership (fixed)
 
@@ -71,7 +77,10 @@ Pair A = Wu Yutong & Wang Yike; Pair B = Chen Moxiong & Gao Shengzhe.
 | A4 | Task2: interview 3-5 real MUST buyers/sellers, keep notes | Wang Yike | not started |
 | A5 | Week 2: UML use-case / class / sequence diagrams | Wang Yike | not started |
 | A6 | Week 2: freeze interfaces between Pair A and Pair B (search, priceStats, findMatches, notify) | Wu Yutong | not started |
-| A7 | Seed data: 5,000 listings for the P95 < 2s search benchmark | Chen Moxiong | not started |
+| A7 | Seed data: 5,000 listings for the P95 < 2s search benchmark | Chen Moxiong | **done in v1.0** (seeded automatically on first start, search measured at ~18 ms) |
+| A8 | v1.0: measurement log for Success Criteria 1-5 (five-minute onboarding, recall/precision on 50 labelled pairs) | whole team | pending |
+| A9 | v1.0: photo upload instead of a photo URL | not assigned | backlog |
+| A10 | v1.0: e-mail notification via the host SMTP service (optional in the URS) | not assigned | backlog |
 
 ## 6. Definition Of Done (Proposal Stage)
 
@@ -102,3 +111,12 @@ Pair A = Wu Yutong & Wang Yike; Pair B = Chen Moxiong & Gao Shengzhe.
 - When the proposal document is open in the editor, edit it through the editor interface;
   its table tools use **1-based** row and column indices (row 1 is the header), and changes
   must be saved before other tools can read them.
+- Build tool: Maven 3.9.9 at `D:\Dev\tools\maven\apache-maven-3.9.9\bin\mvn`; JDK 25 on
+  `PATH` (the project compiles with `--release 17`).
+- **The shell exports `SERVER__PORT`, which overrides `server.port`.** Start the app with
+  `env -u SERVER__PORT -u SERVER_PORT mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=8080"`,
+  otherwise Spring Boot binds to that port and fails with "port already in use".
+- Runtime data lives in `./data/` (H2 files, git-ignored). Delete the folder to force a fresh
+  seed on the next start.
+- Frontend files are served with caching disabled (`spring.web.resources.cache.period=0`), so
+  edits to `app.js` / `app.css` show up on reload without rebuilding.

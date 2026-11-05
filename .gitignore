@@ -20,3 +20,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Local H2 database (created on first run)
+data/

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campus Loop · MUST Second-hand Marketplace</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♻️</text></svg>">
+</head>
+<body>
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="#/home">
+            <span class="brand-mark">CL</span>
+            <span class="brand-text">
+                <strong>Campus Loop</strong>
+                <small>MUST second-hand marketplace</small>
+            </span>
+        </a>
+
+        <nav class="nav" id="nav">
+            <a href="#/home" data-nav="home">Browse</a>
+            <a href="#/matches" data-nav="matches">Matches</a>
+            <a href="#/favorites" data-nav="favorites">Favorites</a>
+            <a href="#/my-listings" data-nav="my-listings">My listings</a>
+            <a href="#/requests" data-nav="requests">Requests</a>
+        </nav>
+
+        <div class="topbar-actions">
+            <button class="btn btn-primary btn-sm" id="publish-btn">+ Sell an item</button>
+            <a class="icon-btn" href="#/notifications" id="bell" title="Notifications">
+                🔔<span class="badge" id="bell-count" hidden>0</span>
+            </a>
+            <div class="account" id="account"></div>
+        </div>
+    </div>
+</header>
+
+<main id="view" class="view"></main>
+
+<footer class="footer">
+    <span>Group 11 · SeekDeep · Software Engineering, MUST</span>
+    <span class="footer-note">Rule-based matching: 0.40 category + 0.35 price + 0.25 condition, shown above 0.70</span>
+</footer>
+
+<div class="toast-stack" id="toasts"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

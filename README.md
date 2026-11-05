@@ -8,6 +8,12 @@ A campus marketplace for Macau University of Science and Technology students to 
 second-hand items, search and filter listings, post want-to-buy requests, and receive
 automatic buyer-seller matches.
 
+> **Version 1.0 (first implementation) is in this repository.** The running code, the
+> rule-based matching engine, the demo data and the test report are described in
+> [Section 11](#11-version-10--implementation). Quick start:
+> `mvn spring-boot:run` → <http://localhost:8080> → log in with student number
+> `1240016186` / `Password123`.
+
 ---
 
 ## 1. Team Profile
@@ -151,6 +157,153 @@ approximately **25%** of the total work.
 | Wang Yike | 1240012305 | Wrote Section 2.1 (Problem Diagnosis) and Section 2.2 (Proposed Treatment); defined the F1-F8 functional feature list and the typical use scenario in Section 2.3; sketched the initial system structure. | 25% |
 | Chen Moxiong | 1240008865 | Designed the rule-based matching method and the weighted scoring formula for F5; wrote Section 4 (Success Criteria) and the measurable quality commitments of Pair A and Pair B. | 25% |
 | Gao Shengzhe | 1240008949 | Applied the MUST report template and formatting; created the GitHub repository and the project README; wrote Section 5 (Expected Result) and the project scope; proofread the final document. | 25% |
+
+---
+
+## 11. Version 1.0 — Implementation
+
+**Stack:** Java 17 (compiled with `--release 17`), Spring Boot 3.5, Spring MVC + Spring Data JPA,
+BCrypt password hashing, Thymeleaf-free static frontend (plain HTML/CSS/JS single-page app).
+**Database:** MySQL 8 in deployment; a file-based H2 database is the default profile so the
+project runs on any machine without installing a database server.
+
+### 11.1 Requirement coverage
+
+| Req. | Status | Where |
+| --- | --- | --- |
+| REQ-1.1 Registration | Done | `AuthController#register`, `AuthService`, `AuthControllerTests`-free form validation in `RegisterForm` |
+| REQ-1.2 Login, profile, account deletion, lockout | Done | `AuthService` (5 failures → 10 min lock), `UserService#changePassword/deleteAccount`, 2 h session timeout |
+| REQ-2.1 Publish listing | Done | `ListingService#create`, 50 active listings per user, immediate matching trigger |
+| REQ-2.2 Manage / delete listing | Done | `ListingService#update/delete`, edits only while Available, cascading cleanup |
+| REQ-3.1 Search, filter, sort | Done | `SearchService` (JPA Specification, 20 per page, newest/price asc/price desc) |
+| REQ-4.1 Want-to-buy requests | Done | `BuyRequestService`, 20 active requests per user, edit and close |
+| REQ-5.1 Automatic matching | Done | `MatchingService` + `TextSimilarity` |
+| REQ-6.1 Favorites | Done | `FavoriteService`, 200 per user, price/status change notifications |
+| REQ-7.1 Transaction status | Done | `ListingService#changeStatus` + `listing_status_history` timeline |
+| REQ-8.1 Notifications | Done | `NotificationService`, bell counter, mark one / mark all, 90-day purge job |
+
+### 11.2 How to run
+
+```bash
+# 1. build and run with the embedded H2 database (default, no installation needed)
+mvn spring-boot:run
+
+# 2. open the application
+#    http://localhost:8080
+
+# 3. run the unit tests
+mvn test
+
+# 4. deploy against MySQL 8 (URS section 7.1)
+mysql -u root -p -e "CREATE DATABASE secondhand CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mvn spring-boot:run -Dspring-boot.run.profiles=mysql   # DB_USER / DB_PASSWORD env vars
+```
+
+On the first start the seeder creates **16 students**, **5,000 listings** and **8 active
+want-to-buy requests**, and runs the matcher so the Matches page is populated immediately.
+Set `--app.seed.enabled=false` to start with an empty database.
+
+### 11.3 Demo accounts (all use password `Password123`)
+
+| Student number | Name | Useful for |
+| --- | --- | --- |
+| `1240016186` | Wu Yutong | Seller: monitor, mouse, CLRS textbook, desk, charger, headphones |
+| `1240008865` | Chen Moxiong | Buyer with an active `monitor 24 inch hdmi ips` request |
+| `1240008949` | Gao Shengzhe | Buyer with `algorithm textbook clrs` and `calculator ti-84` requests |
+| `1240012305` | Wang Yike | Buyer with an active `mouse wireless logitech` request |
+
+### 11.4 Code layout
+
+```
+src/main/java/com/must/secondhand
+├── common/      ApiResponse, PageResult, BizException, GlobalExceptionHandler, session helpers
+├── config/      AuthInterceptor, WebConfig, ScheduledJobs, SeedDataRunner
+├── controller/  Auth, User, Listing, Search, BuyRequest, Match, Favorite, Notification, Meta, My
+├── dto/         request forms (validation) and read models returned to the browser
+├── model/       entities (User, Listing, BuyRequest, Favorite, MatchRecord, Notification,
+│                ListingStatusHistory) and enums
+├── repository/  Spring Data JPA repositories
+└── service/     Auth, User, Listing, Search, BuyRequest, Matching, Favorite, Notification,
+                 TextSimilarity
+src/main/resources/static   index.html + css/app.css + js/app.js (single-page frontend)
+src/test/java               MatchingServiceTest, TextSimilarityTest
+```
+
+### 11.5 REST API (session cookie authentication)
+
+| Method & path | Purpose |
+| --- | --- |
+| `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | Account session |
+| `PUT /api/me`, `PUT /api/me/password`, `DELETE /api/me` | Profile, password, account deletion |
+| `GET /api/search?keyword=&category=&minPrice=&maxPrice=&condition=&sort=&page=` | Search, filter, sort |
+| `GET /api/listings/{id}` | Listing detail with viewer flags and status history |
+| `POST /api/listings`, `PUT /api/listings/{id}`, `DELETE /api/listings/{id}` | Publish / edit / delete |
+| `PUT /api/listings/{id}/status` | Available → Reserved → Sold |
+| `GET /api/my/listings`, `GET /api/my/requests` | Owner pages |
+| `POST /api/requests`, `PUT /api/requests/{id}`, `POST /api/requests/{id}/close` | Want-to-buy requests |
+| `GET /api/matches` | Open matches with sub-scores |
+| `GET /api/favorites`, `POST /api/favorites/{id}`, `DELETE /api/favorites/{id}` | Favorites |
+| `GET /api/notifications`, `GET /api/notifications/summary`, `POST /api/notifications/{id}/read`, `POST /api/notifications/read-all` | Notifications |
+| `GET /api/meta` | Fixed option lists + published matching weights |
+
+All responses use the envelope `{ "success": boolean, "message": string, "data": ... }`;
+errors carry an HTTP status and a user-readable English message.
+
+### 11.6 Matching rule as implemented
+
+A pair becomes a **candidate** when all four gates hold:
+
+1. same category,
+2. keyword similarity ≥ **0.30**,
+3. asking price inside the buyer's budget interval,
+4. listing condition at least as good as the buyer accepts.
+
+Keyword similarity is computed on lower-cased, punctuation-free tokens (stop words removed):
+
+```
+matched      = Σ per buyer keyword (1.0 exact, 0.5 substring, else 0)
+coverage     = matched / number of buyer keywords
+precision    = matched / number of listing tokens
+similarity   = 0.75 * coverage + 0.25 * precision      (capped at 1.0)
+```
+
+Candidates are ranked with the documented weighted score, and only pairs **above 0.70** are
+stored and shown:
+
+```
+score = 0.40 * category + 0.35 * price overlap + 0.25 * condition
+```
+
+`condition` is graded (exact accepted condition 1.0, one grade better 0.75, two 0.5, three
+0.25); `price overlap` is 1.0 because an out-of-budget price is already rejected by the gate;
+`category` is 1.0 because only same-category pairs are candidates. The Matches page prints
+every sub-score so the result stays explainable.
+
+### 11.7 Non-functional requirements
+
+| Req. | Implementation | Measured on this machine |
+| --- | --- | --- |
+| PERF-1.2 search P95 < 2 s on 5,000 listings | Indexed specification query + pagination | **~18 ms** per filtered search request (5 runs) |
+| SEC-1.1 salted password hash | BCrypt via `spring-security-crypto` | password never returned by any endpoint |
+| SEC-1.2 personal data privacy | read models expose only display name | student number / e-mail only on `/api/me` |
+| SEC-1.3 own data only | ownership checks in services + `AuthInterceptor` | 403 on foreign listing edits |
+| SEC-1.4 lockout after 5 failures | `AuthService#login` | 10-minute lock, message with remaining minutes |
+| CAP-3.1 limits | 50 listings, 20 requests, 200 favorites, 90-day notifications | enforced with explicit messages |
+
+### 11.8 Tests
+
+`mvn test` runs 14 JUnit 5 tests: six on text similarity and eight on the matching rule
+(category gate, budget boundaries, condition gate, weak keywords, reserved/sold listings and
+condition grading). All pass.
+
+### 11.9 Known limitations in version 1
+
+- No online payment, delivery or identity verification (as scoped in Section 8).
+- One photo per listing, stored as a URL; no file upload.
+- Notifications are in-system only; e-mail is not enabled.
+- Listing edit history is not kept (only status history).
+- The scheduled matching retry only re-checks items created in the last 24 hours, which keeps
+  the 5,000 seeded listings out of every retry loop.
 
 ---
 
