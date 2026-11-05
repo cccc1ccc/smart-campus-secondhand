@@ -184,6 +184,10 @@ project runs on any machine without installing a database server.
 
 ### 11.2 How to run
 
+**Fastest way (Windows):** double-click **`Open Campus Loop.bat`** (or `start.bat`). It starts
+the packaged jar on port 8080 and opens the browser automatically; closing the console window
+stops the server. The Chinese walkthrough is in `启动说明.txt`.
+
 ```bash
 # 1. build and run with the embedded H2 database (default, no installation needed)
 mvn spring-boot:run
