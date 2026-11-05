@@ -9,7 +9,8 @@ this file instead of from memory.
 | Course / Homework | Software Engineering, Task1 — Project Proposal |
 | Group | 11 — SeekDeep |
 | Team leader | Wu Yutong (1240016186) |
-| Repository | https://github.com/cccc1ccc/smart-campus-secondhand |
+| Repository (personal) | https://github.com/cccc1ccc/smart-campus-secondhand |
+| Repository (team, D2) | https://github.com/MUST-Workspace/D2-team11-project |
 | Proposal document | `docs/Task1_Project_Proposal_Campus_Secondhand_Platform.docx` |
 | Planned tech stack | Java 17 + Spring Boot, MySQL 8, Maven, JUnit 5 |
 
@@ -29,6 +30,7 @@ this file instead of from memory.
 | 2026-11-05 | **Version 1.0 implemented.** Spring Boot 3.5 + Spring Data JPA backend (10 REST controllers, 8 services), plain JavaScript single-page frontend, file-based H2 as default profile plus a MySQL profile, seeder (16 students / 5,000 listings / 8 requests), 14 unit tests, README Section 11 and `docs/RELEASE_v1.0.md`. Git tag `v1.0`. |
 | 2026-11-05 | One-click launcher added: `start.bat` (packaged jar, explicit port, browser auto-open via `open-browser.bat`), `Open Campus Loop.bat`, Chinese `启动说明.txt`; release zip now bundles the jar so it runs with only a JDK. |
 | 2026-11-05 | **Bilingual interface (EN / 中文)** added: `static/js/i18n.js` holds two dictionaries and `t()`, header switch persists in `localStorage`, all pages re-render on switch, dates follow the locale, and `serverMessage()` maps backend errors to Chinese. Documented in README 11.10, RELEASE 2.1 and `启动说明.txt`. |
+| 2026-11-05 | v1.0 pushed to **both repositories** (tag `v1.0`): personal `cccc1ccc/smart-campus-secondhand` and team `MUST-Workspace/D2-team11-project`. The team repository had an unrelated history containing the same proposal/URS documents, so it was synchronised with a merge commit (`-X ours`) instead of a force push: no team commit was lost and both trees are now identical. |
 
 ## 2. Key Decisions
 
