@@ -24,6 +24,7 @@ application with a browser frontend:
 | F6 Favorites | Save / remove, 200 per user, notification when a saved item changes price or status |
 | F7 Status | Available → Reserved → Sold (Reserved can return to Available), timestamped history, matched buyers notified |
 | F8 Notifications | Bell with unread counter, list with read / unread, mark all, 90-day retention job |
+| UI language | **English / 中文 switch in the header**, remembered per browser, applies to every page including dates, enum labels and server error messages |
 
 ## 2. How to run
 
@@ -36,8 +37,23 @@ mvn spring-boot:run -Dspring-boot.run.profiles=mysql    # MySQL 8 deployment
 Demo accounts (password `Password123`): `1240016186` (seller), `1240008865` (monitor buyer),
 `1240008949` (textbook + calculator buyer), `1240012305` (mouse buyer).
 
+The interface opens in the language of the browser (`zh*` → Chinese, otherwise English); the
+**EN / 中文** switch in the header changes it instantly and the choice is remembered.
+
 First start seeds 16 students, 5,000 listings and 8 active requests, then runs the matcher, so
 the Matches page is populated without any manual setup.
+
+### 2.1 Bilingual interface (EN / 中文)
+
+| Aspect | Behaviour |
+| --- | --- |
+| Switch | Header segmented control, `EN` / `中文`, active state highlighted |
+| Scope | Header, footer, all 12 pages, empty states, forms, toasts, confirmation dialogs, pagination, dates |
+| Persistence | `localStorage['campusloop.lang']`; default follows `navigator.language` |
+| Enum labels | Category, condition, listing status and request status are translated from the enum value |
+| Server messages | Backend keeps returning English; `serverMessage()` maps ~55 exact messages plus 6 regex rules (lockout minutes, limits, status transitions) to Chinese, falling back to the original text |
+| Not translated in v1 | Notification **bodies** (created server-side in English) and free text such as listing titles, descriptions and names |
+| API | Unchanged and language-neutral: no `Accept-Language` handling needed server-side |
 
 ## 3. Verification performed for this release
 
@@ -55,6 +71,8 @@ the Matches page is populated without any manual setup.
 | Search on 5,000 listings (filtered, 5 runs) | 17–20 ms per request, far below the 2 s P95 target |
 | Sold listing in search results | Never returned |
 | UI pages (browse, detail, matches, requests, login) | Rendered and checked in a headless browser |
+| Language switch EN → 中文 → EN | Header, navigation, filters, cards, detail page, matches page, dates and toasts all switch without reload; `document.documentElement.lang` and the stored preference update |
+| Server error in Chinese | A wrong password shows `邮箱/学号或密码不正确`; the same request in English shows `Invalid credential` |
 
 ## 4. Deviations and decisions recorded for the report
 
@@ -67,11 +85,17 @@ the Matches page is populated without any manual setup.
    because the gates already reject mismatching categories and out-of-budget prices; condition
    is graded, so the visible score ranges roughly 0.81–1.00. This is stated on the Matches page
    and in the README instead of hiding it.
+4. **Chinese interface added on top of the English requirement.** The URS asks for English
+   labels; the interface keeps English as the default and adds Chinese as a runtime alternative
+   (decision D13). No requirement was dropped, and the API stays English-only so the contract is
+   unchanged.
 
 ## 5. Next version candidates
 
 - Photo upload (multipart) instead of a photo URL field.
 - Measurement evidence for Success Criteria 1–5 on a hand-labelled set of 50 pairs.
 - E-mail notification through the campus SMTP service.
+- Bilingual notification bodies (store a message key plus parameters instead of a fixed English
+  sentence).
 - Pagination on the Matches and Notifications pages when the data set grows.
 - UML diagrams (use case, class, sequence) generated from the implemented code.

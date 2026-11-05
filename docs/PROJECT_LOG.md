@@ -27,6 +27,8 @@ this file instead of from memory.
 | 2026-10-08 | Member tables normalised: Member column = name, second column = student number only. |
 | 2026-10-18 | Task2 URS written on Desktop (`Task2_User_Requirements_Specifications_Campus_Secondhand_Platform.docx`): F1-F8 expanded into REQ-1.1..REQ-8.1, plus PERF/SEC/AVA/CAP/DOM non-functional + domain requirements, Section 10 elicitation (Group 10 client meeting, user interviews, surrogate users), Section 11 per-member contributions. PDF export still pending (A1 rule: use Word Save As PDF). |
 | 2026-11-05 | **Version 1.0 implemented.** Spring Boot 3.5 + Spring Data JPA backend (10 REST controllers, 8 services), plain JavaScript single-page frontend, file-based H2 as default profile plus a MySQL profile, seeder (16 students / 5,000 listings / 8 requests), 14 unit tests, README Section 11 and `docs/RELEASE_v1.0.md`. Git tag `v1.0`. |
+| 2026-11-05 | One-click launcher added: `start.bat` (packaged jar, explicit port, browser auto-open via `open-browser.bat`), `Open Campus Loop.bat`, Chinese `启动说明.txt`; release zip now bundles the jar so it runs with only a JDK. |
+| 2026-11-05 | **Bilingual interface (EN / 中文)** added: `static/js/i18n.js` holds two dictionaries and `t()`, header switch persists in `localStorage`, all pages re-render on switch, dates follow the locale, and `serverMessage()` maps backend errors to Chinese. Documented in README 11.10, RELEASE 2.1 and `启动说明.txt`. |
 
 ## 2. Key Decisions
 
@@ -44,6 +46,7 @@ this file instead of from memory.
 | D10 | Keyword similarity is **coverage of the buyer's keywords (0.75) plus listing-text precision (0.25)** rather than a symmetric text distance. | The URS only says "keyword similarity above a threshold"; coverage matches the question the buyer asks ("does this listing contain what I want") and stops long descriptions from diluting a good match. |
 | D11 | Matching **re-runs on every create/edit/close**, with a scheduled retry limited to items created in the last 24 hours. | Satisfies REQ-5.1 without re-scoring 5,000 seeded listings every ten minutes. |
 | D12 | Seeded bulk listings are assigned to the eight "other student" accounts and backdated. | Keeps demo accounts under the 50-active-listing limit and out of the scheduled retry window. |
+| D13 | The interface is **bilingual (English default + 中文)** and the translation lives entirely in the browser (`i18n.js`); the API keeps returning English labels and messages. | The URS asks for English labels, while the demo audience is Chinese-speaking. Client-side translation keeps the REST contract unchanged and lets the switch work without a reload or a second deployment. |
 
 ## 3. Member Ownership (fixed)
 
@@ -81,6 +84,7 @@ Pair A = Wu Yutong & Wang Yike; Pair B = Chen Moxiong & Gao Shengzhe.
 | A8 | v1.0: measurement log for Success Criteria 1-5 (five-minute onboarding, recall/precision on 50 labelled pairs) | whole team | pending |
 | A9 | v1.0: photo upload instead of a photo URL | not assigned | backlog |
 | A10 | v1.0: e-mail notification via the host SMTP service (optional in the URS) | not assigned | backlog |
+| A11 | v1.0: bilingual notification bodies (store a message key + parameters instead of a fixed English sentence) | not assigned | backlog |
 
 ## 6. Definition Of Done (Proposal Stage)
 
@@ -120,3 +124,9 @@ Pair A = Wu Yutong & Wang Yike; Pair B = Chen Moxiong & Gao Shengzhe.
   seed on the next start.
 - Frontend files are served with caching disabled (`spring.web.resources.cache.period=0`), so
   edits to `app.js` / `app.css` show up on reload without rebuilding.
+- **Stop the running application before `mvn package`.** On Windows the running jar holds a file
+  lock, the repackage step fails with `PluginExecutionException`, and `target/*.jar` is left as a
+  thin ~150 KB jar instead of the ~56 MB fat jar.
+- Interface strings live only in `src/main/resources/static/js/i18n.js`. Adding a string means:
+  add the key to both the `en` and `zh` dictionaries, then use `t('key')` in `app.js`; static
+  header/footer text uses `data-i18n="key"` in `index.html`.

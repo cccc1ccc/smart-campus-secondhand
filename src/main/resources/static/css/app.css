@@ -185,6 +185,40 @@ p { margin: 0 0 10px; }
     position: relative;
 }
 
+.lang-switch {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    padding: 2px;
+    gap: 2px;
+}
+
+.lang-switch button {
+    border: 0;
+    background: transparent;
+    color: var(--text-soft);
+    font-family: inherit;
+    font-size: 12.5px;
+    line-height: 1;
+    padding: 6px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+
+.lang-switch button:hover {
+    background: var(--grey-soft);
+    color: var(--text);
+}
+
+.lang-switch button.on {
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-weight: 600;
+}
+
 .account-btn {
     display: flex;
     align-items: center;

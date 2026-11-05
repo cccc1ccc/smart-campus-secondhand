@@ -14,21 +14,25 @@
             <span class="brand-mark">CL</span>
             <span class="brand-text">
                 <strong>Campus Loop</strong>
-                <small>MUST second-hand marketplace</small>
+                <small data-i18n="app.tagline">MUST second-hand marketplace</small>
             </span>
         </a>
 
         <nav class="nav" id="nav">
-            <a href="#/home" data-nav="home">Browse</a>
-            <a href="#/matches" data-nav="matches">Matches</a>
-            <a href="#/favorites" data-nav="favorites">Favorites</a>
-            <a href="#/my-listings" data-nav="my-listings">My listings</a>
-            <a href="#/requests" data-nav="requests">Requests</a>
+            <a href="#/home" data-nav="home" data-i18n="nav.browse">Browse</a>
+            <a href="#/matches" data-nav="matches" data-i18n="nav.matches">Matches</a>
+            <a href="#/favorites" data-nav="favorites" data-i18n="nav.favorites">Favorites</a>
+            <a href="#/my-listings" data-nav="my-listings" data-i18n="nav.myListings">My listings</a>
+            <a href="#/requests" data-nav="requests" data-i18n="nav.requests">Requests</a>
         </nav>
 
         <div class="topbar-actions">
-            <button class="btn btn-primary btn-sm" id="publish-btn">+ Sell an item</button>
-            <a class="icon-btn" href="#/notifications" id="bell" title="Notifications">
+            <button class="btn btn-primary btn-sm" id="publish-btn" data-i18n="nav.sell">+ Sell an item</button>
+            <div class="lang-switch" id="lang-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="zh">中文</button>
+            </div>
+            <a class="icon-btn" href="#/notifications" id="bell" data-i18n-title="nav.notifications" title="Notifications">
                 🔔<span class="badge" id="bell-count" hidden>0</span>
             </a>
             <div class="account" id="account"></div>
@@ -39,12 +43,13 @@
 <main id="view" class="view"></main>
 
 <footer class="footer">
-    <span>Group 11 · SeekDeep · Software Engineering, MUST</span>
-    <span class="footer-note">Rule-based matching: 0.40 category + 0.35 price + 0.25 condition, shown above 0.70</span>
+    <span data-i18n="footer.team">Group 11 · SeekDeep · Software Engineering, MUST</span>
+    <span class="footer-note" data-i18n="footer.rule">Rule-based matching: 0.40 category + 0.35 price + 0.25 condition, shown above 0.70</span>
 </footer>
 
 <div class="toast-stack" id="toasts"></div>
 
+<script src="/js/i18n.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>

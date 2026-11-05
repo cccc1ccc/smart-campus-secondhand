@@ -1,5 +1,6 @@
 /* Campus Loop - single page frontend for the Smart Campus Second-hand Trading Platform.
-   Plain JavaScript, no build step: every page calls the REST API with the session cookie. */
+   Plain JavaScript, no build step: every page calls the REST API with the session cookie.
+   All visible text goes through t() from i18n.js, so EN / 中文 can be switched at any time. */
 
 const state = {
     user: null,
@@ -21,14 +22,18 @@ const esc = (value) => String(value === null || value === undefined ? '' : value
 
 const money = (value) => 'MOP ' + Number(value || 0).toFixed(2);
 
-const statusLabel = (status) => ({ AVAILABLE: 'Available', RESERVED: 'Reserved', SOLD: 'Sold' }[status] || status);
+const statusLabel = (status) => t('state.' + status);
+const categoryLabel = (value) => t('cat.' + value);
+const conditionLabel = (value) => t('cond.' + value);
 
 const dateStr = (iso) => iso
-    ? new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    ? new Date(iso).toLocaleString(localeCode(), {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    })
     : '';
 
 const dayStr = (iso) => iso
-    ? new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? new Date(iso).toLocaleDateString(localeCode(), { day: '2-digit', month: 'short', year: 'numeric' })
     : '';
 
 function toast(message, isError = false) {
@@ -54,7 +59,8 @@ async function api(path, options = {}) {
         payload = null;
     }
     if (!response.ok || !payload || payload.success === false) {
-        throw new Error((payload && payload.message) || 'Request failed (' + response.status + ')');
+        const raw = (payload && payload.message) || 'HTTP ' + response.status;
+        throw new Error(serverMessage(raw));
     }
     return payload;
 }
@@ -70,32 +76,48 @@ function requireLogin() {
     document.getElementById('view').innerHTML = `
         <div class="empty">
             <span class="big">🔒</span>
-            <h2>Please log in</h2>
-            <p>This page belongs to your account.</p>
-            <a class="btn btn-primary" href="#/login">Log in</a>
-            <a class="btn" href="#/register">Create an account</a>
+            <h2>${t('common.pleaseLogin')}</h2>
+            <p>${t('common.loginRequired')}</p>
+            <a class="btn btn-primary" href="#/login">${t('common.login')}</a>
+            <a class="btn" href="#/register">${t('common.createAccount')}</a>
         </div>`;
     return false;
 }
 
 /* -------------------------------------------------------------- chrome/nav */
 
+/** Translates the static shell (header, footer, document title). */
+function applyStaticTranslations() {
+    document.documentElement.lang = getLang() === 'zh' ? 'zh-CN' : 'en';
+    document.title = t('app.title');
+    document.querySelectorAll('[data-i18n]').forEach((node) => {
+        node.textContent = t(node.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach((node) => {
+        node.title = t(node.dataset.i18nTitle);
+    });
+    document.querySelectorAll('#lang-switch button').forEach((button) => {
+        button.classList.toggle('on', button.dataset.lang === getLang());
+    });
+}
+
 function renderChrome() {
     const account = document.getElementById('account');
     if (!state.user) {
-        account.innerHTML = `<a class="btn btn-sm" href="#/login">Log in</a>`;
+        account.innerHTML = `<a class="btn btn-sm" href="#/login">${t('common.login')}</a>`;
     } else {
         const initials = state.user.name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+        const displayName = getLang() === 'zh' ? state.user.name : state.user.name.split(' ')[0];
         account.innerHTML = `
             <button class="account-btn" id="account-toggle">
-                <span class="avatar">${esc(initials)}</span>${esc(state.user.name.split(' ')[0])}
+                <span class="avatar">${esc(initials)}</span>${esc(displayName)}
             </button>
             <div class="menu" id="account-menu">
-                <a href="#/profile">Profile &amp; settings</a>
-                <a href="#/my-listings">My listings</a>
-                <a href="#/requests">My requests</a>
+                <a href="#/profile">${t('menu.profile')}</a>
+                <a href="#/my-listings">${t('menu.myListings')}</a>
+                <a href="#/requests">${t('menu.myRequests')}</a>
                 <div class="divider"></div>
-                <button type="button" id="logout-btn">Log out</button>
+                <button type="button" id="logout-btn">${t('menu.logout')}</button>
             </div>`;
         const toggle = document.getElementById('account-toggle');
         const menu = document.getElementById('account-menu');
@@ -108,7 +130,7 @@ function renderChrome() {
             state.user = null;
             state.unread = 0;
             renderChrome();
-            toast('Logged out');
+            toast(t('toast.loggedOut'));
             go('#/home');
         });
     }
@@ -145,6 +167,27 @@ async function refreshUnread() {
 
 /* ------------------------------------------------------------- shared bits */
 
+function categoryOptions(selected, placeholderKey) {
+    const head = placeholderKey ? `<option value="">${t(placeholderKey)}</option>` : '';
+    return head + (state.meta ? state.meta.categories : []).map((item) =>
+        `<option value="${esc(item.value)}" ${item.value === selected ? 'selected' : ''}>${esc(categoryLabel(item.value))}</option>`
+    ).join('');
+}
+
+function conditionOptions(selected) {
+    return (state.meta ? state.meta.conditions : []).map((item) =>
+        `<option value="${esc(item.value)}" ${item.value === selected ? 'selected' : ''}>${esc(conditionLabel(item.value))}</option>`
+    ).join('');
+}
+
+function sortOptions(selected) {
+    const keys = ['newest', 'price_asc', 'price_desc'];
+    return keys.map((key) => {
+        const label = key === 'newest' ? t('sort.newest') : key === 'price_asc' ? t('sort.priceAsc') : t('sort.priceDesc');
+        return `<option value="${key}" ${key === selected ? 'selected' : ''}>${label}</option>`;
+    }).join('');
+}
+
 function listingCard(listing) {
     const visual = listing.photoUrl
         ? `<img src="${esc(listing.photoUrl)}" alt="">`
@@ -158,20 +201,12 @@ function listingCard(listing) {
                 <div class="listing-title">${esc(listing.title)}</div>
                 <div class="price">${money(listing.price)}</div>
                 <div class="listing-meta">
-                    <span>${esc(listing.conditionLabel)}</span><span>·</span><span>${esc(listing.categoryLabel)}</span>
+                    <span>${esc(conditionLabel(listing.condition))}</span><span>·</span>
+                    <span>${esc(categoryLabel(listing.category))}</span>
                 </div>
                 <div class="listing-meta"><span>${esc(listing.sellerName)}</span></div>
             </div>
         </a>`;
-}
-
-function options(list, selected, placeholder) {
-    const head = placeholder ? `<option value="">${esc(placeholder)}</option>` : '';
-    return head + list.map((item) => {
-        const value = item.value !== undefined ? item.value : item;
-        const label = item.label !== undefined ? item.label : item;
-        return `<option value="${esc(value)}" ${String(value) === String(selected) ? 'selected' : ''}>${esc(label)}</option>`;
-    }).join('');
 }
 
 /* ----------------------------------------------------------------- routing */
@@ -195,7 +230,7 @@ async function render() {
     const raw = (window.location.hash || '#/home').replace(/^#/, '');
     const path = raw.split('?')[0] || '/home';
     const view = document.getElementById('view');
-    view.innerHTML = `<div class="empty">Loading…</div>`;
+    view.innerHTML = `<div class="empty">${t('common.loading')}</div>`;
 
     let matched = null;
     for (const route of ROUTES) {
@@ -206,16 +241,16 @@ async function render() {
         }
     }
     if (!matched) {
-        view.innerHTML = `<div class="empty"><span class="big">🧭</span><h2>Page not found</h2>
-            <a class="btn btn-primary" href="#/home">Back to browse</a></div>`;
+        view.innerHTML = `<div class="empty"><span class="big">🧭</span><h2>${t('common.pageNotFound')}</h2>
+            <a class="btn btn-primary" href="#/home">${t('common.backToBrowse')}</a></div>`;
         return;
     }
     markNav(matched.route.page);
     try {
         await matched.route.view(...matched.params);
     } catch (error) {
-        view.innerHTML = `<div class="empty"><span class="big">⚠️</span><h2>Something went wrong</h2>
-            <p>${esc(error.message)}</p><a class="btn" href="#/home">Back to browse</a></div>`;
+        view.innerHTML = `<div class="empty"><span class="big">⚠️</span><h2>${t('common.somethingWrong')}</h2>
+            <p>${esc(error.message)}</p><a class="btn" href="#/home">${t('common.backToBrowse')}</a></div>`;
     }
     window.scrollTo(0, 0);
 }
@@ -229,53 +264,53 @@ async function homeView() {
     const filters = state.search;
     const view = document.getElementById('view');
 
-    const conditionChips = state.meta.conditions.map((condition) => {
+    const conditionChips = (state.meta.conditions || []).map((condition) => {
         const on = filters.conditions.includes(condition.value);
-        return `<span class="chip ${on ? 'on' : ''}" data-condition="${condition.value}">${esc(condition.label)}</span>`;
+        return `<span class="chip ${on ? 'on' : ''}" data-condition="${condition.value}">${esc(conditionLabel(condition.value))}</span>`;
     }).join('');
 
     view.innerHTML = `
         <div class="page-head">
             <div>
-                <h1>Buy and sell inside MUST</h1>
-                <p>Textbooks, electronics, furniture and more — post a request and let the platform find the match.</p>
+                <h1>${t('home.title')}</h1>
+                <p>${t('home.subtitle')}</p>
             </div>
-            <a class="btn" href="#/requests">Post a want-to-buy request</a>
+            <a class="btn" href="#/requests">${t('home.postRequest')}</a>
         </div>
 
         <form class="filter-panel" id="filter-form">
             <div class="filter-grid">
                 <div class="field">
-                    <label for="f-keyword">Keyword</label>
-                    <input id="f-keyword" placeholder="Search title or description" value="${esc(filters.keyword)}">
+                    <label for="f-keyword">${t('filter.keyword')}</label>
+                    <input id="f-keyword" placeholder="${t('filter.keywordPh')}" value="${esc(filters.keyword)}">
                 </div>
                 <div class="field">
-                    <label for="f-category">Category</label>
-                    <select id="f-category">${options(state.meta.categories, filters.category, 'All categories')}</select>
+                    <label for="f-category">${t('filter.category')}</label>
+                    <select id="f-category">${categoryOptions(filters.category, 'filter.allCategories')}</select>
                 </div>
                 <div class="field">
-                    <label for="f-min">Min price</label>
-                    <input id="f-min" type="number" min="0" step="1" placeholder="0" value="${esc(filters.min)}">
+                    <label for="f-min">${t('filter.minPrice')}</label>
+                    <input id="f-min" type="number" min="0" step="1" placeholder="${t('filter.zero')}" value="${esc(filters.min)}">
                 </div>
                 <div class="field">
-                    <label for="f-max">Max price</label>
-                    <input id="f-max" type="number" min="0" step="1" placeholder="Any" value="${esc(filters.max)}">
+                    <label for="f-max">${t('filter.maxPrice')}</label>
+                    <input id="f-max" type="number" min="0" step="1" placeholder="${t('filter.anyPrice')}" value="${esc(filters.max)}">
                 </div>
                 <div class="field">
-                    <label for="f-sort">Sort by</label>
-                    <select id="f-sort">${options(state.meta.sorts, filters.sort)}</select>
+                    <label for="f-sort">${t('filter.sort')}</label>
+                    <select id="f-sort">${sortOptions(filters.sort)}</select>
                 </div>
             </div>
             <div class="row" style="margin-top:12px">
-                <span style="font-size:13px;color:var(--text-soft)">Condition</span>
+                <span style="font-size:13px;color:var(--text-soft)">${t('filter.condition')}</span>
                 <div class="chips" id="condition-chips">${conditionChips}</div>
                 <span class="spacer"></span>
-                <button class="btn btn-sm" type="button" id="reset-filters">Reset</button>
-                <button class="btn btn-primary btn-sm" type="submit">Search</button>
+                <button class="btn btn-sm" type="button" id="reset-filters">${t('filter.reset')}</button>
+                <button class="btn btn-primary btn-sm" type="submit">${t('filter.search')}</button>
             </div>
         </form>
 
-        <div id="results"><div class="empty">Searching…</div></div>`;
+        <div id="results"><div class="empty">${t('home.searching')}</div></div>`;
 
     document.getElementById('condition-chips').addEventListener('click', (event) => {
         const chip = event.target.closest('[data-condition]');
@@ -335,9 +370,9 @@ async function loadResults() {
             container.innerHTML = `
                 <div class="empty">
                     <span class="big">🔍</span>
-                    <h2>No listing matches these filters</h2>
-                    <p>Try a shorter keyword, a wider price range or fewer conditions.</p>
-                    <button class="btn" id="clear-all">Clear all filters</button>
+                    <h2>${t('home.emptyTitle')}</h2>
+                    <p>${t('home.emptyHint')}</p>
+                    <button class="btn" id="clear-all">${t('home.clearFilters')}</button>
                 </div>`;
             const clear = document.getElementById('clear-all');
             if (clear) {
@@ -350,7 +385,7 @@ async function loadResults() {
         }
         container.innerHTML = `
             <div class="row" style="margin-bottom:12px;color:var(--text-soft);font-size:13.5px">
-                <span>${page.total} listing${page.total === 1 ? '' : 's'} available</span>
+                <span>${t(page.total === 1 ? 'home.countOne' : 'home.countMany', { n: page.total })}</span>
             </div>
             <div class="grid cards">${page.items.map(listingCard).join('')}</div>
             ${pagination(page)}`;
@@ -372,9 +407,9 @@ function pagination(page) {
     }
     return `
         <div class="pagination">
-            <button class="btn btn-sm" data-page="${page.page - 1}" ${page.page === 0 ? 'disabled' : ''}>Previous</button>
-            <span>Page ${page.page + 1} of ${page.totalPages}</span>
-            <button class="btn btn-sm" data-page="${page.page + 1}" ${page.page + 1 >= page.totalPages ? 'disabled' : ''}>Next</button>
+            <button class="btn btn-sm" data-page="${page.page - 1}" ${page.page === 0 ? 'disabled' : ''}>${t('common.previous')}</button>
+            <span>${t('common.pageOf', { page: page.page + 1, total: page.totalPages })}</span>
+            <button class="btn btn-sm" data-page="${page.page + 1}" ${page.page + 1 >= page.totalPages ? 'disabled' : ''}>${t('common.next')}</button>
         </div>`;
 }
 
@@ -390,49 +425,51 @@ async function listingView(id) {
 
     const history = detail.history.length
         ? `<ul class="timeline">${detail.history.map((item) => `
-            <li><span class="dot"></span><span>${item.fromStatus ? statusLabel(item.fromStatus) + ' → ' : 'Created as '}${statusLabel(item.toStatus)}
+            <li><span class="dot"></span><span>${item.fromStatus
+                ? statusLabel(item.fromStatus) + ' → '
+                : t('detail.createdAs', { status: statusLabel(item.toStatus) })}${item.fromStatus ? statusLabel(item.toStatus) : ''}
             <span style="color:var(--text-faint)">· ${dateStr(item.changedAt)}</span></span></li>`).join('')}</ul>`
-        : `<p style="color:var(--text-faint);font-size:13px">No status change yet.</p>`;
+        : `<p style="color:var(--text-faint);font-size:13px">${t('detail.noHistory')}</p>`;
 
     const ownerActions = detail.owner ? `
         <div class="card tight" style="margin-top:14px">
-            <h3>Seller actions</h3>
+            <h3>${t('detail.sellerActions')}</h3>
             <div class="row">
-                ${listing.status === 'AVAILABLE' ? `<button class="btn btn-sm" id="act-reserve">Mark as reserved</button>` : ''}
-                ${listing.status === 'RESERVED' ? `<button class="btn btn-sm" id="act-sold">Mark as sold</button>
-                     <button class="btn btn-sm" id="act-available">Back to available</button>` : ''}
-                ${listing.status !== 'SOLD' ? `<a class="btn btn-sm" href="#/edit/${listing.id}">Edit</a>` : ''}
-                <button class="btn btn-sm btn-danger" id="act-delete">Delete</button>
+                ${listing.status === 'AVAILABLE' ? `<button class="btn btn-sm" id="act-reserve">${t('detail.reserve')}</button>` : ''}
+                ${listing.status === 'RESERVED' ? `<button class="btn btn-sm" id="act-sold">${t('detail.markSold')}</button>
+                     <button class="btn btn-sm" id="act-available">${t('detail.markAvailable')}</button>` : ''}
+                ${listing.status !== 'SOLD' ? `<a class="btn btn-sm" href="#/edit/${listing.id}">${t('common.edit')}</a>` : ''}
+                <button class="btn btn-sm btn-danger" id="act-delete">${t('common.delete')}</button>
             </div>
-            <p class="hint" style="margin:8px 0 0">Available → Reserved → Sold. Sold listings cannot be edited or restored in version 1.</p>
+            <p class="hint" style="margin:8px 0 0">${t('detail.statusHint')}</p>
         </div>` : '';
 
     const favoriteButton = state.user && !detail.owner
-        ? `<button class="btn ${detail.favorite ? 'btn-primary' : ''}" id="fav-btn">${detail.favorite ? '★ Saved' : '☆ Save'}</button>`
+        ? `<button class="btn ${detail.favorite ? 'btn-primary' : ''}" id="fav-btn">${detail.favorite ? t('common.saveState') : t('common.unsaved')}</button>`
         : '';
 
     view.innerHTML = `
         <div class="row" style="margin-bottom:14px">
-            <a class="btn btn-sm btn-ghost" href="#/home">← Back to browse</a>
+            <a class="btn btn-sm btn-ghost" href="#/home">${t('common.backToBrowse')}</a>
         </div>
         <div class="grid split">
             <div class="card">
                 <div class="row" style="align-items:center;gap:8px;margin-bottom:10px">
                     <span class="badge-pill status-${listing.status}">${statusLabel(listing.status)}</span>
-                    <span class="badge-pill badge-soft">${esc(listing.conditionLabel)}</span>
-                    <span class="badge-pill badge-soft">${esc(listing.categoryLabel)}</span>
+                    <span class="badge-pill badge-soft">${esc(conditionLabel(listing.condition))}</span>
+                    <span class="badge-pill badge-soft">${esc(categoryLabel(listing.category))}</span>
                 </div>
                 <div class="detail-head">
                     <div>
                         <h1 style="margin-bottom:6px">${esc(listing.title)}</h1>
-                        <div class="listing-meta">Listed ${dayStr(listing.createdAt)} · ${esc(listing.sellerName)}</div>
+                        <div class="listing-meta">${t('detail.listedOn', { date: dayStr(listing.createdAt), seller: listing.sellerName })}</div>
                     </div>
                     <div class="detail-price">${money(listing.price)}</div>
                 </div>
                 <div class="thumb" style="aspect-ratio:16/7;margin:16px 0;border-radius:12px">
                     ${listing.photoUrl ? `<img src="${esc(listing.photoUrl)}" alt="">` : `<span style="font-size:56px">${CATEGORY_ICON[listing.category] || '📦'}</span>`}
                 </div>
-                <h3>Description</h3>
+                <h3>${t('detail.description')}</h3>
                 <p class="detail-body">${esc(listing.description)}</p>
                 <div class="row" style="margin-top:16px">${favoriteButton}</div>
                 ${ownerActions}
@@ -440,19 +477,19 @@ async function listingView(id) {
 
             <div class="stack">
                 <div class="card tight">
-                    <h3>Item details</h3>
+                    <h3>${t('detail.itemDetails')}</h3>
                     <dl class="kv">
-                        <dt>Price</dt><dd>${money(listing.price)}</dd>
-                        <dt>Condition</dt><dd>${esc(listing.conditionLabel)}</dd>
-                        <dt>Category</dt><dd>${esc(listing.categoryLabel)}</dd>
-                        <dt>Status</dt><dd>${statusLabel(listing.status)}</dd>
-                        <dt>Seller</dt><dd>${esc(listing.sellerName)}</dd>
-                        <dt>Favorited by</dt><dd>${listing.favoriteCount} student${listing.favoriteCount === 1 ? '' : 's'}</dd>
-                        <dt>Last update</dt><dd>${dateStr(listing.updatedAt)}</dd>
+                        <dt>${t('detail.price')}</dt><dd>${money(listing.price)}</dd>
+                        <dt>${t('detail.condition')}</dt><dd>${esc(conditionLabel(listing.condition))}</dd>
+                        <dt>${t('detail.category')}</dt><dd>${esc(categoryLabel(listing.category))}</dd>
+                        <dt>${t('detail.status')}</dt><dd>${statusLabel(listing.status)}</dd>
+                        <dt>${t('detail.seller')}</dt><dd>${esc(listing.sellerName)}</dd>
+                        <dt>${t('detail.favoritedBy')}</dt><dd>${listing.favoriteCount}</dd>
+                        <dt>${t('detail.lastUpdate')}</dt><dd>${dateStr(listing.updatedAt)}</dd>
                     </dl>
                 </div>
                 <div class="card tight">
-                    <h3>Status history</h3>
+                    <h3>${t('detail.statusHistory')}</h3>
                     ${history}
                 </div>
             </div>
@@ -464,10 +501,10 @@ async function listingView(id) {
             try {
                 if (detail.favorite) {
                     await api('/favorites/' + listing.id, { method: 'DELETE' });
-                    toast('Removed from favorites');
+                    toast(t('toast.favRemoved'));
                 } else {
                     await api('/favorites/' + listing.id, { method: 'POST' });
-                    toast('Saved to favorites');
+                    toast(t('toast.favAdded'));
                 }
                 listingView(id);
             } catch (error) {
@@ -476,15 +513,15 @@ async function listingView(id) {
         });
     }
 
-    const act = (id, body, message) => {
-        const button = document.getElementById(id);
+    const act = (elementId, target, messageKey) => {
+        const button = document.getElementById(elementId);
         if (!button) {
             return;
         }
         button.addEventListener('click', async () => {
             try {
-                await api('/listings/' + listing.id + '/status', { method: 'PUT', body: { status: body } });
-                toast(message);
+                await api('/listings/' + listing.id + '/status', { method: 'PUT', body: { status: target } });
+                toast(t(messageKey));
                 listingView(id);
                 refreshUnread();
             } catch (error) {
@@ -492,19 +529,19 @@ async function listingView(id) {
             }
         });
     };
-    act('act-reserve', 'RESERVED', 'Listing reserved, matched buyers were notified');
-    act('act-sold', 'SOLD', 'Listing marked as sold');
-    act('act-available', 'AVAILABLE', 'Listing is available again');
+    act('act-reserve', 'RESERVED', 'toast.reserved');
+    act('act-sold', 'SOLD', 'toast.sold');
+    act('act-available', 'AVAILABLE', 'toast.available');
 
     const deleteButton = document.getElementById('act-delete');
     if (deleteButton) {
         deleteButton.addEventListener('click', async () => {
-            if (!window.confirm('Delete this listing together with its favorites and matches?')) {
+            if (!window.confirm(t('detail.confirmDelete'))) {
                 return;
             }
             try {
                 await api('/listings/' + listing.id, { method: 'DELETE' });
-                toast('Listing deleted');
+                toast(t('toast.deleted'));
                 go('#/my-listings');
             } catch (error) {
                 toast(error.message, true);
@@ -527,7 +564,7 @@ async function publishView(editId) {
         const detail = (await api('/listings/' + editId)).data;
         if (!detail.owner) {
             document.getElementById('view').innerHTML = `<div class="empty"><span class="big">⛔</span>
-                <h2>You cannot edit this listing</h2><a class="btn" href="#/home">Back to browse</a></div>`;
+                <h2>${t('publish.notOwner')}</h2><a class="btn" href="#/home">${t('common.backToBrowse')}</a></div>`;
             return;
         }
         existing = detail.listing;
@@ -536,42 +573,42 @@ async function publishView(editId) {
     document.getElementById('view').innerHTML = `
         <div class="page-head">
             <div>
-                <h1>${existing ? 'Edit listing' : 'Sell an item'}</h1>
-                <p>Five fields, three clicks: title, category, condition and price are enough to publish.</p>
+                <h1>${existing ? t('publish.titleEdit') : t('publish.titleNew')}</h1>
+                <p>${t('publish.subtitle')}</p>
             </div>
-            <a class="btn" href="#/my-listings">My listings</a>
+            <a class="btn" href="#/my-listings">${t('publish.myListings')}</a>
         </div>
         <form class="card" id="listing-form" style="max-width:660px">
             <div class="field">
-                <label for="l-title">Title</label>
-                <input id="l-title" maxlength="100" required placeholder="e.g. 24-inch IPS monitor 75Hz HDMI" value="${esc(existing ? existing.title : '')}">
+                <label for="l-title">${t('form.title')}</label>
+                <input id="l-title" maxlength="100" required placeholder="${t('form.titlePh')}" value="${esc(existing ? existing.title : '')}">
             </div>
             <div class="field-row">
                 <div class="field">
-                    <label for="l-category">Category</label>
-                    <select id="l-category">${options(state.meta.categories, existing ? existing.category : '')}</select>
+                    <label for="l-category">${t('form.category')}</label>
+                    <select id="l-category">${categoryOptions(existing ? existing.category : '')}</select>
                 </div>
                 <div class="field">
-                    <label for="l-condition">Condition</label>
-                    <select id="l-condition">${options(state.meta.conditions, existing ? existing.condition : 'GOOD')}</select>
+                    <label for="l-condition">${t('form.condition')}</label>
+                    <select id="l-condition">${conditionOptions(existing ? existing.condition : 'GOOD')}</select>
                 </div>
             </div>
             <div class="field">
-                <label for="l-price">Asking price (MOP)</label>
+                <label for="l-price">${t('form.price')}</label>
                 <input id="l-price" type="number" min="0.01" step="0.01" required value="${existing ? existing.price : ''}">
             </div>
             <div class="field">
-                <label for="l-description">Description</label>
-                <textarea id="l-description" maxlength="2000" required placeholder="Age, condition details, what is included, pick-up place…">${esc(existing ? existing.description : '')}</textarea>
+                <label for="l-description">${t('form.description')}</label>
+                <textarea id="l-description" maxlength="2000" required placeholder="${t('form.descriptionPh')}">${esc(existing ? existing.description : '')}</textarea>
             </div>
             <div class="field">
-                <label for="l-photo">Photo URL (optional)</label>
+                <label for="l-photo">${t('form.photo')}</label>
                 <input id="l-photo" maxlength="300" placeholder="https://…" value="${esc(existing && existing.photoUrl ? existing.photoUrl : '')}">
-                <span class="hint">Version 1 accepts one photo per listing.</span>
+                <span class="hint">${t('publish.photoHint')}</span>
             </div>
             <div class="row">
-                <button class="btn btn-primary" type="submit">${existing ? 'Save changes' : 'Publish listing'}</button>
-                <button class="btn" type="button" id="cancel-btn">Cancel</button>
+                <button class="btn btn-primary" type="submit">${existing ? t('publish.submitEdit') : t('publish.submitNew')}</button>
+                <button class="btn" type="button" id="cancel-btn">${t('common.cancel')}</button>
             </div>
         </form>`;
 
@@ -591,7 +628,7 @@ async function publishView(editId) {
             const result = existing
                 ? await api('/listings/' + existing.id, { method: 'PUT', body })
                 : await api('/listings', { method: 'POST', body });
-            toast(existing ? 'Listing updated' : 'Listing published, matching started');
+            toast(t(existing ? 'toast.updated' : 'toast.published'));
             refreshUnread();
             go('#/listing/' + result.data.id);
         } catch (error) {
@@ -612,56 +649,60 @@ async function myListingsView() {
     const rows = listings.map((listing) => `
         <tr>
             <td><a href="#/listing/${listing.id}">${esc(listing.title)}</a>
-                <div class="listing-meta">${esc(listing.categoryLabel)} · ${esc(listing.conditionLabel)}</div></td>
+                <div class="listing-meta">${esc(categoryLabel(listing.category))} · ${esc(conditionLabel(listing.condition))}</div></td>
             <td>${money(listing.price)}</td>
             <td><span class="badge-pill status-${listing.status}">${statusLabel(listing.status)}</span></td>
             <td>${listing.favoriteCount}</td>
             <td>${dayStr(listing.createdAt)}</td>
             <td class="row" style="gap:6px">
-                ${listing.status !== 'SOLD' ? `<a class="btn btn-sm" href="#/edit/${listing.id}">Edit</a>` : ''}
-                ${listing.status === 'AVAILABLE' ? `<button class="btn btn-sm" data-reserve="${listing.id}">Reserve</button>` : ''}
-                ${listing.status === 'RESERVED' ? `<button class="btn btn-sm" data-sold="${listing.id}">Sold</button>` : ''}
-                <button class="btn btn-sm btn-danger" data-delete="${listing.id}">Delete</button>
+                ${listing.status !== 'SOLD' ? `<a class="btn btn-sm" href="#/edit/${listing.id}">${t('common.edit')}</a>` : ''}
+                ${listing.status === 'AVAILABLE' ? `<button class="btn btn-sm" data-reserve="${listing.id}">${t('my.reserve')}</button>` : ''}
+                ${listing.status === 'RESERVED' ? `<button class="btn btn-sm" data-sold="${listing.id}">${t('my.sold')}</button>` : ''}
+                <button class="btn btn-sm btn-danger" data-delete="${listing.id}">${t('common.delete')}</button>
             </td>
         </tr>`).join('');
 
     view.innerHTML = `
         <div class="page-head">
-            <div><h1>My listings</h1><p>${listings.length} listing${listings.length === 1 ? '' : 's'} in total. Active listings per user are limited to 50.</p></div>
-            <a class="btn btn-primary" href="#/publish">+ New listing</a>
+            <div><h1>${t('my.title')}</h1>
+                <p>${t(listings.length === 1 ? 'my.subtitleOne' : 'my.subtitleMany', { n: listings.length })}</p></div>
+            <a class="btn btn-primary" href="#/publish">${t('my.new')}</a>
         </div>
         ${listings.length ? `
         <div class="card" style="padding:6px 14px">
             <table>
-                <thead><tr><th>Item</th><th>Price</th><th>Status</th><th>Favorites</th><th>Published</th><th></th></tr></thead>
+                <thead><tr>
+                    <th>${t('my.item')}</th><th>${t('my.price')}</th><th>${t('my.status')}</th>
+                    <th>${t('my.favorites')}</th><th>${t('my.published')}</th><th></th>
+                </tr></thead>
                 <tbody>${rows}</tbody>
             </table>
-        </div>` : `<div class="empty"><span class="big">📦</span><h2>No listings yet</h2>
-            <p>Publish your first item in under a minute.</p><a class="btn btn-primary" href="#/publish">Sell an item</a></div>`}`;
+        </div>` : `<div class="empty"><span class="big">📦</span><h2>${t('my.emptyTitle')}</h2>
+            <p>${t('my.emptyHint')}</p><a class="btn btn-primary" href="#/publish">${t('my.sell')}</a></div>`}`;
 
-    const change = async (id, status, message) => {
+    const change = async (id, status, messageKey) => {
         try {
             await api('/listings/' + id + '/status', { method: 'PUT', body: { status } });
-            toast(message);
+            toast(t(messageKey));
             myListingsView();
         } catch (error) {
             toast(error.message, true);
         }
     };
     view.querySelectorAll('[data-reserve]').forEach((button) => {
-        button.addEventListener('click', () => change(button.dataset.reserve, 'RESERVED', 'Listing reserved'));
+        button.addEventListener('click', () => change(button.dataset.reserve, 'RESERVED', 'toast.reserved'));
     });
     view.querySelectorAll('[data-sold]').forEach((button) => {
-        button.addEventListener('click', () => change(button.dataset.sold, 'SOLD', 'Listing marked as sold'));
+        button.addEventListener('click', () => change(button.dataset.sold, 'SOLD', 'toast.sold'));
     });
     view.querySelectorAll('[data-delete]').forEach((button) => {
         button.addEventListener('click', async () => {
-            if (!window.confirm('Delete this listing and its favorites and matches?')) {
+            if (!window.confirm(t('detail.confirmDelete'))) {
                 return;
             }
             try {
                 await api('/listings/' + button.dataset.delete, { method: 'DELETE' });
-                toast('Listing deleted');
+                toast(t('toast.deleted'));
                 myListingsView();
             } catch (error) {
                 toast(error.message, true);
@@ -688,57 +729,57 @@ async function requestsView() {
                 <div>
                     <div class="row" style="gap:8px">
                         <strong>${esc(request.keywords)}</strong>
-                        <span class="badge-pill ${request.status === 'ACTIVE' ? 'status-AVAILABLE' : 'status-SOLD'}">${request.status === 'ACTIVE' ? 'Active' : 'Closed'}</span>
+                        <span class="badge-pill ${request.status === 'ACTIVE' ? 'status-AVAILABLE' : 'status-SOLD'}">${t('reqState.' + request.status)}</span>
                     </div>
                     <div class="listing-meta" style="margin-top:4px">
-                        ${esc(request.categoryLabel)} · Budget ${money(request.minBudget)} – ${money(request.maxBudget)}
-                        · Acceptable condition: ${esc(request.acceptableConditionLabel)}
+                        ${esc(categoryLabel(request.category))} ·
+                        ${t('req.budget', { min: money(request.minBudget), max: money(request.maxBudget) })} ·
+                        ${t('req.acceptableCondition', { condition: conditionLabel(request.acceptableCondition) })}
                     </div>
                     ${request.requirements ? `<div class="listing-meta" style="margin-top:4px">${esc(request.requirements)}</div>` : ''}
                 </div>
-                ${request.status === 'ACTIVE' ? `<button class="btn btn-sm btn-danger" data-close="${request.id}">Close request</button>` : ''}
+                ${request.status === 'ACTIVE' ? `<button class="btn btn-sm btn-danger" data-close="${request.id}">${t('req.close')}</button>` : ''}
             </div>
         </div>`).join('');
 
     view.innerHTML = `
         <div class="page-head">
-            <div><h1>Want-to-buy requests</h1>
-                <p>Post what you need; the matcher compares it with every active listing within seconds.</p></div>
+            <div><h1>${t('req.title')}</h1><p>${t('req.subtitle')}</p></div>
         </div>
         <div class="grid split">
             <div class="stack">
-                <h2>My requests (${requests.length}/20)</h2>
-                ${requests.length ? list : `<div class="empty"><span class="big">📝</span><p>No request yet. Describe the item you are looking for.</p></div>`}
+                <h2>${t('req.mine', { n: requests.length })}</h2>
+                ${requests.length ? list : `<div class="empty"><span class="big">📝</span><p>${t('req.emptyHint')}</p></div>`}
             </div>
             <form class="card" id="request-form">
-                <h3>New request</h3>
+                <h3>${t('req.newTitle')}</h3>
                 <div class="field">
-                    <label for="r-keywords">What are you looking for?</label>
-                    <input id="r-keywords" maxlength="200" required placeholder="e.g. monitor 24 inch hdmi ips">
+                    <label for="r-keywords">${t('req.keywords')}</label>
+                    <input id="r-keywords" maxlength="200" required placeholder="${t('req.keywordsPh')}">
                 </div>
                 <div class="field">
-                    <label for="r-category">Category</label>
-                    <select id="r-category">${options(state.meta.categories, '')}</select>
+                    <label for="r-category">${t('form.category')}</label>
+                    <select id="r-category">${categoryOptions('')}</select>
                 </div>
                 <div class="field-row">
                     <div class="field">
-                        <label for="r-min">Min budget</label>
+                        <label for="r-min">${t('req.minBudget')}</label>
                         <input id="r-min" type="number" min="0.01" step="0.01" required>
                     </div>
                     <div class="field">
-                        <label for="r-max">Max budget</label>
+                        <label for="r-max">${t('req.maxBudget')}</label>
                         <input id="r-max" type="number" min="0.01" step="0.01" required>
                     </div>
                 </div>
                 <div class="field">
-                    <label for="r-condition">Acceptable condition</label>
-                    <select id="r-condition">${options(state.meta.conditions, 'GOOD')}</select>
+                    <label for="r-condition">${t('req.condition')}</label>
+                    <select id="r-condition">${conditionOptions('GOOD')}</select>
                 </div>
                 <div class="field">
-                    <label for="r-requirements">Other requirements (optional)</label>
+                    <label for="r-requirements">${t('req.requirements')}</label>
                     <textarea id="r-requirements" maxlength="500" style="min-height:70px"></textarea>
                 </div>
-                <button class="btn btn-primary btn-block" type="submit">Publish request</button>
+                <button class="btn btn-primary btn-block" type="submit">${t('req.publish')}</button>
             </form>
         </div>`;
 
@@ -746,7 +787,7 @@ async function requestsView() {
         button.addEventListener('click', async () => {
             try {
                 await api('/requests/' + button.dataset.close + '/close', { method: 'POST' });
-                toast('Request closed');
+                toast(t('toast.reqClosed'));
                 requestsView();
             } catch (error) {
                 toast(error.message, true);
@@ -766,7 +807,7 @@ async function requestsView() {
         };
         try {
             await api('/requests', { method: 'POST', body });
-            toast('Request published, matching started');
+            toast(t('toast.reqPublished'));
             refreshUnread();
             requestsView();
         } catch (error) {
@@ -799,25 +840,33 @@ async function matchesView() {
                     <div class="score-ring">${match.score.toFixed(2)}</div>
                     <div>
                         <div class="row" style="gap:8px">
-                            <span class="badge-pill badge-accent">${match.myRole === 'SELLER' ? 'Your item · buyer found' : 'Your request · item found'}</span>
-                            <span class="badge-pill badge-soft">Matched ${dayStr(match.createdAt)}</span>
+                            <span class="badge-pill badge-accent">${t(match.myRole === 'SELLER' ? 'match.itemFound' : 'match.requestFound')}</span>
+                            <span class="badge-pill badge-soft">${t('match.matchedOn', { date: dayStr(match.createdAt) })}</span>
                         </div>
                         <h3 style="margin:8px 0 2px">
                             <a href="#/listing/${listing.id}">${esc(listing.title)}</a>
                             <span style="font-weight:600;color:var(--text-soft);font-size:14px">· ${money(listing.price)}</span>
                         </h3>
                         <div class="listing-meta">
-                            ${esc(listing.conditionLabel)} · ${esc(listing.categoryLabel)} · seller ${esc(listing.sellerName)}
+                            ${t('match.listingLine', {
+                                condition: conditionLabel(listing.condition),
+                                category: categoryLabel(listing.category),
+                                seller: listing.sellerName
+                            })}
                         </div>
                         <div class="listing-meta" style="margin-top:6px">
-                            Request: “${esc(request.keywords)}” · budget ${money(request.minBudget)} – ${money(request.maxBudget)}
-                            · buyer ${esc(request.buyerName)}
+                            ${t('match.requestLine', {
+                                keywords: request.keywords,
+                                min: money(request.minBudget),
+                                max: money(request.maxBudget),
+                                buyer: request.buyerName
+                            })}
                         </div>
                         <div class="score-bars">
-                            ${bar('Category 0.40', match.categoryScore)}
-                            ${bar('Price 0.35', match.priceScore)}
-                            ${bar('Condition 0.25', match.conditionScore)}
-                            ${bar('Keyword (gate)', match.keywordScore)}
+                            ${bar(t('match.ruleCategory'), match.categoryScore)}
+                            ${bar(t('match.rulePrice'), match.priceScore)}
+                            ${bar(t('match.ruleCondition'), match.conditionScore)}
+                            ${bar(t('match.ruleKeyword'), match.keywordScore)}
                         </div>
                     </div>
                 </div>
@@ -826,17 +875,16 @@ async function matchesView() {
 
     view.innerHTML = `
         <div class="page-head">
-            <div><h1>Matches</h1>
-                <p>Open matches only, ranked by score. Score = 0.40 × category + 0.35 × price + 0.25 × condition; pairs above 0.70 are shown.</p></div>
-            <a class="btn" href="#/requests">My requests</a>
+            <div><h1>${t('match.title')}</h1><p>${t('match.subtitle')}</p></div>
+            <a class="btn" href="#/requests">${t('match.myRequests')}</a>
         </div>
         ${matches.length ? `<div class="stack">${cards}</div>` : `
             <div class="empty">
                 <span class="big">🤝</span>
-                <h2>No open match yet</h2>
-                <p>Publish a listing or a want-to-buy request. The matcher runs automatically after every change.</p>
-                <a class="btn btn-primary" href="#/publish">Sell an item</a>
-                <a class="btn" href="#/requests">Post a request</a>
+                <h2>${t('match.emptyTitle')}</h2>
+                <p>${t('match.emptyHint')}</p>
+                <a class="btn btn-primary" href="#/publish">${t('match.sell')}</a>
+                <a class="btn" href="#/requests">${t('match.postRequest')}</a>
             </div>`}`;
 }
 
@@ -851,13 +899,13 @@ async function favoritesView() {
 
     view.innerHTML = `
         <div class="page-head">
-            <div><h1>Favorites</h1><p>You are notified when a saved item changes price or status.</p></div>
+            <div><h1>${t('fav.title')}</h1><p>${t('fav.subtitle')}</p></div>
         </div>
         ${favorites.length
             ? `<div class="grid cards">${favorites.map(listingCard).join('')}</div>`
-            : `<div class="empty"><span class="big">☆</span><h2>No saved item</h2>
-               <p>Use the Save button on any listing to keep it here.</p>
-               <a class="btn btn-primary" href="#/home">Browse listings</a></div>`}`;
+            : `<div class="empty"><span class="big">☆</span><h2>${t('fav.emptyTitle')}</h2>
+               <p>${t('fav.emptyHint')}</p>
+               <a class="btn btn-primary" href="#/home">${t('fav.browse')}</a></div>`}`;
 }
 
 /* ----------------------------------------------------------- notifications */
@@ -875,25 +923,25 @@ async function notificationsView() {
                 <div>
                     <div class="row" style="gap:8px">
                         <strong>${esc(item.title)}</strong>
-                        ${item.read ? '' : '<span class="badge-pill badge-accent">New</span>'}
+                        ${item.read ? '' : `<span class="badge-pill badge-accent">${t('common.new')}</span>`}
                     </div>
                     <div style="color:var(--text-soft);font-size:13.5px;margin-top:4px">${esc(item.body)}</div>
                     <div class="listing-meta" style="margin-top:6px">
                         ${dateStr(item.createdAt)}
-                        ${item.listingId ? `· <a href="#/listing/${item.listingId}">Open listing</a>` : ''}
+                        ${item.listingId ? `· <a href="#/listing/${item.listingId}">${t('notif.openListing')}</a>` : ''}
                     </div>
                 </div>
-                ${item.read ? '' : `<button class="btn btn-sm btn-ghost" data-read="${item.id}">Mark read</button>`}
+                ${item.read ? '' : `<button class="btn btn-sm btn-ghost" data-read="${item.id}">${t('common.markRead')}</button>`}
             </div>
         </div>`).join('');
 
     view.innerHTML = `
         <div class="page-head">
-            <div><h1>Notifications</h1><p>Matches, status changes and price changes on saved items. Kept for 90 days.</p></div>
-            <button class="btn" id="read-all">Mark all as read</button>
+            <div><h1>${t('notif.title')}</h1><p>${t('notif.subtitle')}</p></div>
+            <button class="btn" id="read-all">${t('notif.markAll')}</button>
         </div>
         ${page.items.length ? `<div class="stack">${items}</div>` : `<div class="empty"><span class="big">🔔</span>
-            <h2>Nothing yet</h2><p>Notifications appear here as soon as a match is found.</p></div>`}`;
+            <h2>${t('notif.emptyTitle')}</h2><p>${t('notif.emptyHint')}</p></div>`}`;
 
     const readAll = document.getElementById('read-all');
     if (readAll) {
@@ -923,48 +971,45 @@ async function profileView() {
     const view = document.getElementById('view');
 
     view.innerHTML = `
-        <div class="page-head"><div><h1>Profile &amp; settings</h1>
-            <p>Personal data is visible only to you; other students see your display name on listings.</p></div></div>
+        <div class="page-head"><div><h1>${t('profile.title')}</h1>
+            <p>${t('profile.subtitle')}</p></div></div>
         <div class="grid split">
             <div class="stack">
                 <form class="card" id="profile-form">
-                    <h3>Account</h3>
+                    <h3>${t('profile.account')}</h3>
                     <div class="field">
-                        <label for="p-name">Display name</label>
+                        <label for="p-name">${t('profile.name')}</label>
                         <input id="p-name" value="${esc(user.name)}" maxlength="60" required>
                     </div>
                     <div class="field">
-                        <label for="p-contact">Contact (phone, WeChat…)</label>
+                        <label for="p-contact">${t('profile.contact')}</label>
                         <input id="p-contact" value="${esc(user.contact || '')}" maxlength="120">
                     </div>
                     <dl class="kv" style="margin:6px 0 16px">
-                        <dt>Student number</dt><dd>${esc(user.studentNo)}</dd>
-                        <dt>E-mail</dt><dd>${esc(user.email)}</dd>
-                        <dt>Member since</dt><dd>${dayStr(user.createdAt)}</dd>
+                        <dt>${t('profile.studentNo')}</dt><dd>${esc(user.studentNo)}</dd>
+                        <dt>${t('profile.email')}</dt><dd>${esc(user.email)}</dd>
+                        <dt>${t('profile.memberSince')}</dt><dd>${dayStr(user.createdAt)}</dd>
                     </dl>
-                    <button class="btn btn-primary" type="submit">Save profile</button>
+                    <button class="btn btn-primary" type="submit">${t('profile.save')}</button>
                 </form>
 
                 <form class="card" id="password-form">
-                    <h3>Change password</h3>
+                    <h3>${t('profile.changePassword')}</h3>
                     <div class="field">
-                        <label for="p-old">Current password</label>
+                        <label for="p-old">${t('profile.current')}</label>
                         <input id="p-old" type="password" required>
                     </div>
                     <div class="field">
-                        <label for="p-new">New password (at least 8 characters)</label>
+                        <label for="p-new">${t('profile.newPwd')}</label>
                         <input id="p-new" type="password" minlength="8" required>
                     </div>
-                    <button class="btn" type="submit">Update password</button>
+                    <button class="btn" type="submit">${t('profile.updatePwd')}</button>
                 </form>
             </div>
             <div class="card tight">
-                <h3>Delete account</h3>
-                <p style="font-size:13.5px;color:var(--text-soft)">
-                    Deleting the account also removes your listings, requests, favorites, matches and notifications.
-                    This cannot be undone.
-                </p>
-                <button class="btn btn-danger btn-block" id="delete-account">Delete my account</button>
+                <h3>${t('profile.deleteTitle')}</h3>
+                <p style="font-size:13.5px;color:var(--text-soft)">${t('profile.deleteText')}</p>
+                <button class="btn btn-danger btn-block" id="delete-account">${t('profile.deleteButton')}</button>
             </div>
         </div>`;
 
@@ -980,7 +1025,7 @@ async function profileView() {
             });
             state.user = result.data;
             renderChrome();
-            toast('Profile updated');
+            toast(t('toast.profileUpdated'));
         } catch (error) {
             toast(error.message, true);
         }
@@ -996,7 +1041,7 @@ async function profileView() {
                     newPassword: document.getElementById('p-new').value
                 }
             });
-            toast('Password changed');
+            toast(t('toast.pwdChanged'));
             event.target.reset();
         } catch (error) {
             toast(error.message, true);
@@ -1004,7 +1049,7 @@ async function profileView() {
     });
 
     document.getElementById('delete-account').addEventListener('click', async () => {
-        if (!window.confirm('Delete your account and all related data? This cannot be undone.')) {
+        if (!window.confirm(t('profile.confirmDelete'))) {
             return;
         }
         try {
@@ -1012,7 +1057,7 @@ async function profileView() {
             state.user = null;
             state.unread = 0;
             renderChrome();
-            toast('Account deleted');
+            toast(t('toast.accountDeleted'));
             go('#/home');
         } catch (error) {
             toast(error.message, true);
@@ -1026,24 +1071,24 @@ function loginView() {
     document.getElementById('view').innerHTML = `
         <div class="auth-wrap">
             <div class="card">
-                <h2>Log in</h2>
-                <p style="color:var(--text-soft);font-size:13.5px">Use your e-mail or your student number.</p>
+                <h2>${t('login.title')}</h2>
+                <p style="color:var(--text-soft);font-size:13.5px">${t('login.subtitle')}</p>
                 <form id="login-form">
                     <div class="field">
-                        <label for="login-id">E-mail or student number</label>
+                        <label for="login-id">${t('login.identifier')}</label>
                         <input id="login-id" required autocomplete="username">
                     </div>
                     <div class="field">
-                        <label for="login-password">Password</label>
+                        <label for="login-password">${t('login.password')}</label>
                         <input id="login-password" type="password" required autocomplete="current-password">
                     </div>
-                    <button class="btn btn-primary btn-block" type="submit">Log in</button>
+                    <button class="btn btn-primary btn-block" type="submit">${t('login.submit')}</button>
                 </form>
-                <p style="margin-top:14px;font-size:13.5px">No account yet? <a href="#/register">Register</a></p>
+                <p style="margin-top:14px;font-size:13.5px">${t('login.noAccount')} <a href="#/register">${t('common.register')}</a></p>
                 <div class="demo-hint">
-                    <strong>Demo account</strong><br>
-                    Student number <code>1240016186</code> · password <code>Password123</code><br>
-                    Buyer demo: <code>1240008865</code> (has an active monitor request).
+                    <strong>${t('login.demoTitle')}</strong><br>
+                    ${t('login.demoSeller')} <code>1240016186</code> · password <code>Password123</code><br>
+                    ${t('login.demoBuyer')} <code>1240008865</code>
                 </div>
             </div>
         </div>`;
@@ -1061,7 +1106,7 @@ function loginView() {
             state.user = result.data;
             renderChrome();
             await refreshUnread();
-            toast('Welcome back, ' + state.user.name.split(' ')[0]);
+            toast(t('toast.welcomeBack', { name: getLang() === 'zh' ? state.user.name : state.user.name.split(' ')[0] }));
             go('#/home');
         } catch (error) {
             toast(error.message, true);
@@ -1073,34 +1118,34 @@ function registerView() {
     document.getElementById('view').innerHTML = `
         <div class="auth-wrap">
             <div class="card">
-                <h2>Create an account</h2>
-                <p style="color:var(--text-soft);font-size:13.5px">MUST students only. Five fields, less than two minutes.</p>
+                <h2>${t('register.title')}</h2>
+                <p style="color:var(--text-soft);font-size:13.5px">${t('register.subtitle')}</p>
                 <form id="register-form">
                     <div class="field">
-                        <label for="reg-name">Name</label>
+                        <label for="reg-name">${t('reg.name')}</label>
                         <input id="reg-name" maxlength="60" required>
                     </div>
                     <div class="field">
-                        <label for="reg-no">Student number</label>
+                        <label for="reg-no">${t('reg.studentNo')}</label>
                         <input id="reg-no" inputmode="numeric" pattern="[0-9]{6,20}" required>
                     </div>
                     <div class="field">
-                        <label for="reg-email">E-mail</label>
+                        <label for="reg-email">${t('reg.email')}</label>
                         <input id="reg-email" type="email" maxlength="120" required>
                     </div>
                     <div class="field-row">
                         <div class="field">
-                            <label for="reg-password">Password</label>
+                            <label for="reg-password">${t('reg.password')}</label>
                             <input id="reg-password" type="password" minlength="8" required>
                         </div>
                         <div class="field">
-                            <label for="reg-confirm">Repeat password</label>
+                            <label for="reg-confirm">${t('reg.confirm')}</label>
                             <input id="reg-confirm" type="password" minlength="8" required>
                         </div>
                     </div>
-                    <button class="btn btn-primary btn-block" type="submit">Register</button>
+                    <button class="btn btn-primary btn-block" type="submit">${t('reg.submit')}</button>
                 </form>
-                <p style="margin-top:14px;font-size:13.5px">Already registered? <a href="#/login">Log in</a></p>
+                <p style="margin-top:14px;font-size:13.5px">${t('register.haveAccount')} <a href="#/login">${t('common.login')}</a></p>
             </div>
         </div>`;
 
@@ -1120,7 +1165,7 @@ function registerView() {
             state.user = result.data;
             renderChrome();
             await refreshUnread();
-            toast('Welcome to Campus Loop');
+            toast(t('toast.welcome'));
             go('#/home');
         } catch (error) {
             toast(error.message, true);
@@ -1130,7 +1175,25 @@ function registerView() {
 
 /* -------------------------------------------------------------------- boot */
 
+function bindLanguageSwitch() {
+    document.getElementById('lang-switch').addEventListener('click', async (event) => {
+        const button = event.target.closest('[data-lang]');
+        if (!button || button.dataset.lang === getLang()) {
+            return;
+        }
+        setLang(button.dataset.lang);
+        applyStaticTranslations();
+        renderChrome();
+        await render();
+    });
+}
+
 async function boot() {
+    initLang();
+    setLang(getLang());
+    applyStaticTranslations();
+    bindLanguageSwitch();
+
     document.getElementById('publish-btn').addEventListener('click', () => {
         go(state.user ? '#/publish' : '#/login');
     });
