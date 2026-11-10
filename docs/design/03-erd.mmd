@@ -1,0 +1,92 @@
+erDiagram
+    users ||--o{ listings : "seller_id"
+    users ||--o{ buy_requests : "buyer_id"
+    users ||--o{ favorites : "user_id"
+    users ||--o{ notifications : "user_id"
+    listings ||--o{ favorites : "listing_id"
+    listings ||--o{ match_records : "listing_id"
+    listings ||--o{ listing_status_history : "listing_id"
+    buy_requests ||--o{ match_records : "request_id"
+
+    users {
+        bigint id PK
+        varchar name
+        varchar student_no UK
+        varchar email UK
+        varchar password_hash
+        varchar contact
+        int failed_attempts
+        timestamp locked_until
+        timestamp created_at
+    }
+
+    listings {
+        bigint id PK
+        bigint seller_id FK
+        varchar title
+        varchar category
+        varchar description
+        varchar item_condition
+        decimal price
+        varchar status
+        varchar photo_url
+        timestamp created_at
+        timestamp updated_at
+        timestamp sold_at
+    }
+
+    buy_requests {
+        bigint id PK
+        bigint buyer_id FK
+        varchar keywords
+        varchar category
+        decimal min_budget
+        decimal max_budget
+        varchar acceptable_condition
+        varchar requirements
+        varchar status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    favorites {
+        bigint id PK
+        bigint user_id FK
+        bigint listing_id FK
+        timestamp created_at
+    }
+
+    match_records {
+        bigint id PK
+        bigint listing_id FK
+        bigint request_id FK
+        double score
+        double category_score
+        double price_score
+        double condition_score
+        double keyword_score
+        varchar status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    listing_status_history {
+        bigint id PK
+        bigint listing_id FK
+        varchar from_status
+        varchar to_status
+        bigint changed_by
+        timestamp changed_at
+    }
+
+    notifications {
+        bigint id PK
+        bigint user_id FK
+        varchar type
+        varchar title
+        varchar body
+        bigint listing_id
+        bigint request_id
+        boolean is_read
+        timestamp created_at
+    }

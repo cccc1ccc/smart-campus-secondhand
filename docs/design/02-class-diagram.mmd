@@ -1,0 +1,138 @@
+classDiagram
+    direction TB
+
+    class User {
+        +Long id
+        +String name
+        +String studentNo
+        +String email
+        +String passwordHash
+        +String contact
+        +int failedAttempts
+        +Instant lockedUntil
+        +Instant createdAt
+    }
+
+    class Listing {
+        +Long id
+        +String title
+        +Category category
+        +String description
+        +ItemCondition condition
+        +BigDecimal price
+        +ListingStatus status
+        +String photoUrl
+        +Instant createdAt
+        +Instant updatedAt
+        +Instant soldAt
+    }
+
+    class BuyRequest {
+        +Long id
+        +String keywords
+        +Category category
+        +BigDecimal minBudget
+        +BigDecimal maxBudget
+        +ItemCondition acceptableCondition
+        +String requirements
+        +RequestStatus status
+        +Instant createdAt
+    }
+
+    class Favorite {
+        +Long id
+        +Instant createdAt
+    }
+
+    class MatchRecord {
+        +Long id
+        +double score
+        +double categoryScore
+        +double priceScore
+        +double conditionScore
+        +double keywordScore
+        +MatchStatus status
+        +Instant createdAt
+    }
+
+    class ListingStatusHistory {
+        +Long id
+        +ListingStatus fromStatus
+        +ListingStatus toStatus
+        +Long changedBy
+        +Instant changedAt
+    }
+
+    class Notification {
+        +Long id
+        +NotificationType type
+        +String title
+        +String body
+        +Long listingId
+        +Long requestId
+        +boolean read
+        +Instant createdAt
+    }
+
+    class Category {
+        <<enumeration>>
+        BOOKS
+        ELECTRONICS
+        FURNITURE
+        DAILY_SUPPLIES
+        CLOTHING
+        SPORTS
+        OTHER
+    }
+
+    class ItemCondition {
+        <<enumeration>>
+        NEW
+        LIKE_NEW
+        GOOD
+        FAIR
+        +getRank() int
+    }
+
+    class ListingStatus {
+        <<enumeration>>
+        AVAILABLE
+        RESERVED
+        SOLD
+    }
+
+    class RequestStatus {
+        <<enumeration>>
+        ACTIVE
+        CLOSED
+    }
+
+    class MatchStatus {
+        <<enumeration>>
+        OPEN
+        CLOSED
+    }
+
+    class NotificationType {
+        <<enumeration>>
+        MATCH_FOUND
+        STATUS_CHANGED
+        PRICE_CHANGED
+    }
+
+    User "1" --> "0..*" Listing : sells
+    User "1" --> "0..*" BuyRequest : publishes
+    User "1" --> "0..*" Favorite : keeps
+    User "1" --> "0..*" Notification : receives
+    Listing "1" --> "0..*" Favorite : is saved in
+    Listing "1" --> "0..*" MatchRecord : is matched by
+    BuyRequest "1" --> "0..*" MatchRecord : is matched by
+    Listing "1" --> "0..*" ListingStatusHistory : records
+
+    Listing ..> Category
+    Listing ..> ItemCondition
+    Listing ..> ListingStatus
+    BuyRequest ..> RequestStatus
+    BuyRequest ..> ItemCondition
+    MatchRecord ..> MatchStatus
+    Notification ..> NotificationType

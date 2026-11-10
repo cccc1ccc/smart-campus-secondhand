@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor S as Seller
+    participant UI as Browser UI
+    participant C as ListingController
+    participant LS as ListingService
+    participant MS as MatchingService
+    participant NS as NotificationService
+    actor B as Matched buyer
+    actor F as Favoriter
+
+    S->>UI: click "mark as reserved"
+    UI->>C: PUT /api/listings/{id}/status
+    C->>LS: changeStatus(userId, id, RESERVED)
+    LS->>LS: requireOwnedListing, else 403
+    LS->>LS: check ALLOWED_TRANSITIONS
+
+    alt transition not allowed
+        LS-->>C: BizException
+        C-->>UI: 400 with message
+        UI-->>S: inline error toast
+    else transition allowed
+        LS->>LS: save listing and status history
+        LS->>MS: closeMatchesOfListing(id, notify)
+        MS->>MS: set OPEN records to CLOSED
+        MS->>NS: notify matched buyers
+        NS-->>B: matched listing now reserved
+        LS->>LS: load favoriters of the listing
+        LS->>NS: notify each favoriter
+        NS-->>F: favorite now reserved
+        LS-->>C: ListingView with history
+        C-->>UI: 200 ApiResponse
+        UI-->>S: badge and timeline updated
+    end

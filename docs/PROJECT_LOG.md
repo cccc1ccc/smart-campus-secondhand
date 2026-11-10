@@ -31,6 +31,7 @@ this file instead of from memory.
 | 2026-11-05 | One-click launcher added: `start.bat` (packaged jar, explicit port, browser auto-open via `open-browser.bat`), `Open Campus Loop.bat`, Chinese `启动说明.txt`; release zip now bundles the jar so it runs with only a JDK. |
 | 2026-11-05 | **Bilingual interface (EN / 中文)** added: `static/js/i18n.js` holds two dictionaries and `t()`, header switch persists in `localStorage`, all pages re-render on switch, dates follow the locale, and `serverMessage()` maps backend errors to Chinese. Documented in README 11.10, RELEASE 2.1 and `启动说明.txt`. |
 | 2026-11-05 | v1.0 pushed to **both repositories** (tag `v1.0`): personal `cccc1ccc/smart-campus-secondhand` and team `MUST-Workspace/D2-team11-project`. The team repository had an unrelated history containing the same proposal/URS documents, so it was synchronised with a merge commit (`-X ours`) instead of a force push: no team commit was lost and both trees are now identical. |
+| 2026-11-10 | **Week 2 design delivered** (`docs/DESIGN.md`): architecture, UML class diagram (7 entities, 6 enumerations), ER diagram, use case diagram (3 actors, F1-F8), two sequence diagrams (publish + matching, status transition), matching-rule activity diagram, and the frozen interfaces between Pair A and Pair B. Diagrams are authored in Mermaid under `docs/design/*.mmd` and rendered to SVG/PNG in `docs/design/render/`. Design is written against the v1.0 code, so it can be checked file by file. Backlog items A5 and A6 are closed. |
 
 ## 2. Key Decisions
 
@@ -80,8 +81,8 @@ Pair A = Wu Yutong & Wang Yike; Pair B = Chen Moxiong & Gao Shengzhe.
 | A2 | Check that the contribution percentages in the report match reality before each submission | whole team | pending |
 | A3 | Task2: contact Group 10, arrange the elicitation meeting | Wu Yutong | not started |
 | A4 | Task2: interview 3-5 real MUST buyers/sellers, keep notes | Wang Yike | not started |
-| A5 | Week 2: UML use-case / class / sequence diagrams | Wang Yike | not started |
-| A6 | Week 2: freeze interfaces between Pair A and Pair B (search, priceStats, findMatches, notify) | Wu Yutong | not started |
+| A5 | Week 2: UML use-case / class / sequence diagrams | Wang Yike | **done 2026-11-10** (`docs/DESIGN.md`, figures in `docs/design/render/`) |
+| A6 | Week 2: freeze interfaces between Pair A and Pair B (search, priceStats, findMatches, notify) | Wu Yutong | **done 2026-11-10** (DESIGN Section 8; `priceStats` frozen but deferred to v1.1) |
 | A7 | Seed data: 5,000 listings for the P95 < 2s search benchmark | Chen Moxiong | **done in v1.0** (seeded automatically on first start, search measured at ~18 ms) |
 | A8 | v1.0: measurement log for Success Criteria 1-5 (five-minute onboarding, recall/precision on 50 labelled pairs) | whole team | pending |
 | A9 | v1.0: photo upload instead of a photo URL | not assigned | backlog |

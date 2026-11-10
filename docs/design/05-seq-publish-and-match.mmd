@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor S as Seller
+    participant UI as Browser UI
+    participant C as ListingController
+    participant LS as ListingService
+    participant MS as MatchingService
+    participant NS as NotificationService
+    actor B as Matched buyer
+
+    S->>UI: submit publish form
+    UI->>C: POST /api/listings
+    C->>LS: create(userId, form)
+    LS->>LS: validate, enforce 50 active listings
+    LS->>LS: save listing (AVAILABLE)
+    LS->>MS: runForListing(listing)
+    MS->>MS: load ACTIVE requests of the category
+
+    loop each candidate request
+        MS->>MS: score(listing, request)
+        alt gates pass and score above 0.70
+            MS->>MS: save MatchRecord (OPEN, sub-scores)
+            MS->>NS: notify buyer MATCH_FOUND
+            NS-->>B: listing matches your request
+            MS->>NS: notify seller MATCH_FOUND
+            NS-->>S: a buyer wants this item
+        else gate fails or score too low
+            MS->>MS: close an existing OPEN record
+        end
+    end
+
+    MS-->>LS: matching finished
+    LS-->>C: ListingView
+    C-->>UI: 200 ApiResponse
+    UI-->>S: detail page and toast

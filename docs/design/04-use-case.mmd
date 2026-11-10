@@ -1,0 +1,36 @@
+flowchart LR
+    Guest(("Guest"))
+    Student(("Student<br/>buyer / seller"))
+    Scheduler(("Scheduler<br/>system timer"))
+
+    subgraph SYS["Campus Loop platform"]
+        direction TB
+        UC1(["F1 Register / log in"])
+        UC2(["F2 Publish, edit,<br/>delete listing"])
+        UC3(["F3 Search, filter, sort"])
+        UC4(["F4 Publish want-to-buy<br/>request"])
+        UC5(["F5 Run automatic<br/>matching"])
+        UC6(["F5 View ranked matches"])
+        UC7(["F6 Manage favorites"])
+        UC8(["F7 Change status"])
+        UC9(["F8 Read notifications"])
+        UC10(["F8 Retry matching,<br/>purge old notifications"])
+    end
+
+    Guest --> UC1
+    Guest --> UC3
+    Student --> UC1
+    Student --> UC2
+    Student --> UC3
+    Student --> UC4
+    Student --> UC6
+    Student --> UC7
+    Student --> UC8
+    Student --> UC9
+    Scheduler --> UC10
+
+    UC5 -.->|include| UC9
+    UC2 -.->|include| UC5
+    UC4 -.->|include| UC5
+    UC8 -.->|include| UC9
+    UC10 -.->|extend| UC5

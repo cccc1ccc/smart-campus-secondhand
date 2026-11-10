@@ -1,0 +1,16 @@
+flowchart TB
+    START([One listing, one active request]) --> G1{listings.status = AVAILABLE<br/>and request.status = ACTIVE?}
+    G1 -->|no| REJ([not a candidate<br/>close existing record if any])
+    G1 -->|yes| G2{same category?}
+    G2 -->|no| REJ
+    G2 -->|yes| G3{listing condition rank<br/>&#8804; acceptable rank?}
+    G3 -->|no| REJ
+    G3 -->|yes| G4{min budget &#8804; price &#8804; max budget?}
+    G4 -->|no| REJ
+    G4 -->|yes| G5{keyword similarity &#8805; 0.30?}
+    G5 -->|no| REJ
+    G5 -->|yes| SC["score = 0.40 x category<br/>+ 0.35 x price<br/>+ 0.25 x condition"]
+    SC --> G6{score &gt; 0.70?}
+    G6 -->|no| REJ
+    G6 -->|yes| SAVE["create or reopen MatchRecord<br/>store total and four sub-scores"]
+    SAVE --> NOTE(["notify buyer and seller<br/>MATCH_FOUND"])

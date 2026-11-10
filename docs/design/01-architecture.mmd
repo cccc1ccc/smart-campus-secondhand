@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph CLIENT["Browser (thin client)"]
+        UI["12 pages: search, detail, publish, requests,<br/>matches, favorites, my listings, notifications, auth, profile"]
+        I18N["i18n.js<br/>EN / 中文 switch"]
+    end
+
+    subgraph WEB["Spring Boot 3.5 application"]
+        direction TB
+        SEC["AuthInterceptor<br/>session check, 401 / 403"]
+        API["10 REST controllers<br/>/api/**"]
+        SVC["8 services<br/>Auth, User, Listing, Search,<br/>BuyRequest, Matching, Favorite, Notification"]
+        REPO["7 Spring Data JPA repositories"]
+        JOB["ScheduledJobs<br/>match retry, 90-day purge"]
+    end
+
+    DB[("H2 file database (default)<br/>MySQL 8 (profile mysql)")]
+
+    UI -->|"fetch JSON"| SEC
+    I18N -.->|"client-side only"| UI
+    SEC --> API
+    API --> SVC
+    SVC --> REPO
+    API --> JOB
+    JOB --> SVC
+    REPO --> DB

@@ -334,6 +334,25 @@ every page, survives reloads, and a URL is never language-specific — one deplo
 Backend contract is unchanged: the API still returns English labels and English error messages,
 so the REST interface stays language-neutral and the translation lives entirely in the client.
 
+## 12. Week 2 — Software Design
+
+[`docs/DESIGN.md`](docs/DESIGN.md) holds the Week 2 design: system structure, database entities,
+the UML models and the interfaces frozen between the two pairs. The Mermaid sources are in
+`docs/design/*.mmd`, and the rendered figures for the report are in `docs/design/render/`.
+
+| Figure | Model | Answers |
+| --- | --- | --- |
+| 2-1 | Architecture | Which layer owns which rule, and what runs where |
+| 3-1 | UML class diagram | Seven entities, six enumerations, and their multiplicities |
+| 4-1 | ER diagram | Tables, keys, unique constraints and indexes |
+| 5-1 | Activity diagram | The five gates and the weighted score of the matching rule |
+| 6-1 | Sequence diagram | Publishing a listing and running matching in one transaction |
+| 6-2 | Sequence diagram | Status transition with matched-buyer and favoriter notifications |
+| 7-1 | Use case diagram | Three actors, F1-F8, and the include / extend relations |
+
+Interface freeze (backlog item A6): `search` (Pair A), `findMatches` and `notify` (Pair B), and
+the reserved `priceStats` contract, each with its exact signature, error behaviour and the rule
+for who calls it when. Section 8 of the design document is the reference for both pairs.
 
 ---
 
